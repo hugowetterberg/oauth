@@ -1,3 +1,132 @@
 <?php
 // $Id$
 
+/**
+ * Implementation hook_autoload_info().
+ */
+function services_oauth_autoload_info() {
+  $lib = array('file' => 'lib/OAuth.php');
+  
+  return array(
+    'DrupalOAuthServer'   => array('file' => 'includes/DrupalOAuthServer.inc'),
+    'DrupalOAuthDataStore'=> array('file' => 'includes/DrupalOAuthDataStore.inc'),
+    'OAuthServer'     => $lib,
+    'OAuthDataStore'  => $lib,
+    'OAuthRequest'    => $lib,
+    'OAuthConsumer'   => $lib,
+  );
+}
+
+/**
+ * Implementation of hook_services_authentication().
+ */
+function services_oauth_services_authentication() {
+  return array(
+    'title' => t('OAuth authentication'),
+    'description' => t('An open protocol to allow secure API authorization'),
+  );
+}
+
+/**
+ * Implementation of hook_menu().
+ */
+function services_oauth_menu() {
+  $menu = array();
+
+  $menu['oauth/authorize'] = array(
+    'page callback' => '_services_oauth_authorize',
+    'access callback' => '_services_oauth_always_true',
+    'file' => 'includes/services_oauth.inc',
+  );
+
+  $menu['oauth/request_token'] = array(
+    'page callback' => '_services_oauth_request_token',
+    'access callback' => '_services_oauth_always_true',
+    'file' => 'includes/services_oauth.inc',
+  );
+
+  $menu['oauth/access_token'] = array(
+    'page callback' => '_services_oauth_access_token',
+    'access callback' => '_services_oauth_always_true',
+    'file' => 'includes/services_oauth.inc',
+  );
+
+  return $menu;
+}
+
+function _services_oauth_always_true() {
+  return TRUE;
+}
+
+/**
+ * Implementation of hook_xrds().
+ */
+function services_oauth_xrds() {
+  $xrds = array();
+  $xrds['oauth'] = array(
+    'services' => array(
+      array(
+        'data' => array(
+          'Type' => array('http://oauth.net/discovery/1.0'),
+          'URI' => array('#main'),
+        ),
+      ),
+      array(
+        'data' => array(
+          'Type' => array(
+            'http://oauth.net/core/1.0/endpoint/request',
+            'http://oauth.net/core/1.0/parameters/auth-header',
+            'http://oauth.net/core/1.0/parameters/uri-query',
+            'http://oauth.net/core/1.0/signature/HMAC-SHA1',
+          ),
+          'URI' => array(url('oauth/request_token', array('absolute'=>TRUE))),
+        ),
+      ),
+      array(
+        'data' => array(
+          'Type' => array(
+            'http://oauth.net/core/1.0/endpoint/authorize',
+            'http://oauth.net/core/1.0/parameters/uri-query',
+          ),
+          'URI' => array(url('oauth/authorize', array('absolute'=>TRUE))),
+        ),
+      ),
+      array(
+        'data' => array(
+          'Type' => array(
+            'http://oauth.net/core/1.0/endpoint/access',
+            'http://oauth.net/core/1.0/parameters/auth-header',
+            'http://oauth.net/core/1.0/parameters/uri-query',
+            'http://oauth.net/core/1.0/signature/HMAC-SHA1',
+          ),
+          'URI' => array(url('oauth/access_token', array('absolute'=>TRUE))),
+        ),
+      ),
+    ),
+  );
+  return $xrds;
+}
+
+/**
+ * Implementation of hook_user().
+ */
+function services_oauth_user($op, &$edit, &$account, $category = NULL) {
+  global $user;
+
+  // If the user that has the permission to use services is seeing
+  // his own profile, show his OAuth consumer key and secret.
+  if ($op == 'view' && user_access('integrate external application', $account) &&
+      ($account->uid == $user->uid or user_access('administer webservices'))) {
+    module_load_include('admin.inc', 'oauth');
+    _oauth_user($op, $edit, $account, $category);
+  }
+  elseif ($op == 'delete') {
+    // Delete all tokens related to a user
+    module_load_include('inc', 'oauth');
+    $consumer = _oauth_consumer_get($account->uid);
+    db_query('DELETE FROM {services_oauth_consumer}
+      WHERE uid = %d', $account->uid);
+    db_query("DELETE FROM {services_oauth_token}
+      WHERE uid = %d OR consumer_key = '%s'", $account->uid, $consumer->key);
+  }
+}
