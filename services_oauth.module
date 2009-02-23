@@ -117,13 +117,13 @@ function services_oauth_user($op, &$edit, &$account, $category = NULL) {
   // his own profile, show his OAuth consumer key and secret.
   if ($op == 'view' && user_access('integrate external application', $account) &&
       ($account->uid == $user->uid or user_access('administer webservices'))) {
-    module_load_include('admin.inc', 'oauth');
-    _oauth_user($op, $edit, $account, $category);
+    module_load_include('admin.inc', 'services_oauth');
+    _services_oauth_user($op, $edit, $account, $category);
   }
   elseif ($op == 'delete') {
     // Delete all tokens related to a user
-    module_load_include('inc', 'oauth');
-    $consumer = _oauth_consumer_get($account->uid);
+    module_load_include('inc', 'services_oauth');
+    $consumer = _services_oauth_consumer_get($account->uid);
     db_query('DELETE FROM {services_oauth_consumer}
       WHERE uid = %d', $account->uid);
     db_query("DELETE FROM {services_oauth_token}

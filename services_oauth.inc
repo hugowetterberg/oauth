@@ -181,7 +181,7 @@ function _services_oauth_token_access($version=NULL, $timestamp=NULL, $nonce=NUL
  *   Object. OAuth service consumer.
  */
 function _services_oauth_consumer_get($uid) {
-  $result = db_query('SELECT * FROM {oauth_consumer} WHERE uid = %d', $uid);
+  $result = db_query('SELECT * FROM {services_oauth_consumer} WHERE uid = %d', $uid);
   if ($object = db_fetch_array($result)) {
     return new OAuthConsumer($object['consumer_key'], $object['consumer_secret']);
   }
@@ -191,7 +191,7 @@ function _services_oauth_consumer_get($uid) {
       'consumer_key'    => user_password(32),
       'consumer_secret' => user_password(32),
     );
-    drupal_write_record('oauth_consumer', $sql);
+    drupal_write_record('services_oauth_consumer', $sql);
     return new OAuthConsumer($sql['consumer_key'], $sql['consumer_secret']);
   }
 }
