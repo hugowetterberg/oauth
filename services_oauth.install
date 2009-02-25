@@ -15,12 +15,6 @@ function services_oauth_schema() {
   $schema['services_oauth_consumer'] = array(
     'description' => t('Consumer keys for users that can consume services.'),
     'fields' => array(
-      'uid' => array(
-        'description' => t('User ID from {user}.uid.'),
-        'type'        => 'int',
-        'unsigned'    => TRUE,
-        'not null'    => TRUE
-      ),
       'consumer_key' => array(
         'description' => t('Consumer key allow the user to contact the services API as an external application.'),
         'type'        => 'varchar',
@@ -33,10 +27,28 @@ function services_oauth_schema() {
         'length'      => 32,
         'not null'    => TRUE
       ),
+      'uid' => array(
+        'description' => t('The application owner.'),
+        'type'        => 'int',
+        'unsigned'    => TRUE,
+        'not null'    => TRUE
+      ),
+      'name' => array(
+        'description' => t('The application name.'),
+        'type'        => 'varchar',
+        'length'      => 128,
+        'not null'    => TRUE
+      ),
+      'type' => array(
+        'description' => t('The application type.'),
+        'type'        => 'varchar',
+        'length'      => 32,
+        'not null'    => TRUE,
+      ),
     ),
-    'primary key' => array('uid'),
-    'unique keys' => array(
-      'consumer_key' => array('consumer_key')
+    'primary key' => array('consumer_key'),
+    'index' => array(
+      'user' => array('uid'),
     ),
   );
   $schema['services_oauth_token'] = array(
@@ -73,7 +85,7 @@ function services_oauth_schema() {
         'not null'    => TRUE
       ),
       'services' => array(
-        'description' => t('An array of services that the user allowed the consumer to do.'),
+        'description' => t('An array of services that the user allowed the consumer to access.'),
         'type'        => 'text',
       ),
       'authorized' => array(

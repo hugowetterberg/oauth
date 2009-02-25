@@ -6,14 +6,16 @@
  */
 function services_oauth_autoload_info() {
   $lib = array('file' => 'lib/OAuth.php');
-  
+
   return array(
     'DrupalOAuthServer'   => array('file' => 'includes/DrupalOAuthServer.inc'),
     'DrupalOAuthDataStore'=> array('file' => 'includes/DrupalOAuthDataStore.inc'),
+    'DrupalOAuthRequest'  => array('file' => 'includes/DrupalOAuthRequest.inc'),
     'OAuthServer'     => $lib,
     'OAuthDataStore'  => $lib,
     'OAuthRequest'    => $lib,
     'OAuthConsumer'   => $lib,
+    'OAuthToken'      => $lib,
   );
 }
 
@@ -28,30 +30,65 @@ function services_oauth_services_authentication() {
 }
 
 /**
+ * Implementation of hook_perm().
+ */
+function services_oauth_perm() {
+  return array('services oauth register consumers');
+}
+
+/**
  * Implementation of hook_menu().
  */
 function services_oauth_menu() {
   $menu = array();
 
   $menu['oauth/authorize'] = array(
-    'page callback' => '_services_oauth_authorize',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_services_oauth_authorize'),
     'access callback' => '_services_oauth_always_true',
-    'file' => 'includes/services_oauth.inc',
+    'file' => 'services_oauth.pages.inc',
+    'type' => MENU_CALLBACK,
   );
 
   $menu['oauth/request_token'] = array(
     'page callback' => '_services_oauth_request_token',
     'access callback' => '_services_oauth_always_true',
-    'file' => 'includes/services_oauth.inc',
+    'file' => 'services_oauth.pages.inc',
+    'type' => MENU_CALLBACK,
   );
 
   $menu['oauth/access_token'] = array(
     'page callback' => '_services_oauth_access_token',
     'access callback' => '_services_oauth_always_true',
-    'file' => 'includes/services_oauth.inc',
+    'file' => 'services_oauth.pages.inc',
+    'type' => MENU_CALLBACK,
+  );
+
+  $menu['user/%user/applications'] = array(
+    'title' => 'Applications',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_services_oauth_user_applications', 1),
+    'access callback' => 'oauth_services_user_access',
+    'access arguments' => array(1),
+    'file' => 'services_oauth.pages.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  $menu['user/%user/applications/add'] = array(
+    'title' => 'Add application',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_services_oauth_user_applications_add', 1),
+    'access callback' => 'user_access',
+    'access arguments' => array('services oauth register consumers'),
+    'file' => 'services_oauth.pages.inc',
+    'type' => MENU_CALLBACK,
   );
 
   return $menu;
+}
+
+function oauth_services_user_access($user) {
+  return user_edit_access($user) && (user_access('access services', $user) || user_access('services oauth register consumers', $user));
 }
 
 function _services_oauth_always_true() {
@@ -108,25 +145,65 @@ function services_oauth_xrds() {
 }
 
 /**
+ * Verifies the request
+ *
+ * @return array
+ *  An array containing the validated
+ * @author Hugo Wetterberg
+ */
+function services_oauth_verify_request() {
+  $req = DrupalOAuthRequest::from_request();
+
+  // Verify
+  $consumer = $req->get_parameter('oauth_consumer_key');
+  if (!empty($consumer)) {
+    $server = new DrupalOAuthServer();
+    return $server->verify_request($req);
+  }
+  return array(NULL,NULL);
+}
+
+/**
+ * Sets the global user object to the user associated
+ * with the provided token.
+ *
+ * @param OAuthToken $token
+ * @return void
+ */
+function services_oauth_set_user($token=NULL) {
+  // Load the appropriate user if we got a token
+  if ($token && !empty($token->key)) {
+    $uid = db_result(db_query("SELECT uid
+      FROM {services_oauth_token}
+      WHERE token_key='%s' AND consumer_key='%s'", array(
+        ':token_key' => $token->key,
+        ':consumer_key' => $consumer->key,
+      )));
+    if ($uid) {
+      global $user;
+      $user = user_load($uid);
+    }
+  }
+}
+
+/**
  * Implementation of hook_user().
  */
 function services_oauth_user($op, &$edit, &$account, $category = NULL) {
   global $user;
 
-  // If the user that has the permission to use services is seeing
-  // his own profile, show his OAuth consumer key and secret.
-  if ($op == 'view' && user_access('integrate external application', $account) &&
-      ($account->uid == $user->uid or user_access('administer webservices'))) {
-    module_load_include('admin.inc', 'services_oauth');
-    _services_oauth_user($op, $edit, $account, $category);
-  }
-  elseif ($op == 'delete') {
+  if ($op == 'delete') {
     // Delete all tokens related to a user
     module_load_include('inc', 'services_oauth');
-    $consumer = _services_oauth_consumer_get($account->uid);
+    $consumers = _services_oauth_user_consumer_info($account->uid);
     db_query('DELETE FROM {services_oauth_consumer}
-      WHERE uid = %d', $account->uid);
+      WHERE uid = %d', array(
+        ':uid' => $account->uid,
+      ));
     db_query("DELETE FROM {services_oauth_token}
-      WHERE uid = %d OR consumer_key = '%s'", $account->uid, $consumer->key);
+      WHERE uid = %d OR consumer_key = '%s'", array(
+        ':uid' => $account->uid,
+        ':consumer_key' => $consumer->consumer_key,
+      ));
   }
 }

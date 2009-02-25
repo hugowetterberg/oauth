@@ -30,6 +30,7 @@ function _services_oauth_user($op, &$edit, &$account, $category = NULL) {
   global $user;
 
   module_load_include('inc', 'services_oauth');
+
   $consumer = _services_oauth_consumer_get($account->uid);
   $account->content['services_oauth'] = array(
     '#attributes' => array('class' => 'user-member'),

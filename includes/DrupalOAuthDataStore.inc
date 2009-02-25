@@ -12,10 +12,12 @@ class DrupalOAuthDataStore extends OAuthDataStore {
    *   String. The consumer key.
    */
   function lookup_consumer($consumer_key) {
-    $result = db_query("SELECT * FROM {oauth_consumer}
-      WHERE consumer_key = '%s'", $consumer_key);
-    if ($object = db_fetch_object($result)) {
-      return new OAuthConsumer($object->consumer_key, $object->consumer_secret);
+    $consumer_secret = db_result(db_query("SELECT consumer_secret FROM {services_oauth_consumer}
+      WHERE consumer_key = '%s'", array(
+        ':consumer_key' => $consumer_key,
+      )));
+    if ($consumer_secret) {
+      return new OAuthConsumer($consumer_key, $consumer_secret);
     }
     throw new OAuthException('Consumer not found');
   }
@@ -34,11 +36,15 @@ class DrupalOAuthDataStore extends OAuthDataStore {
    *   case it doesnt exist.
    */
   function lookup_token($consumer, $token_type, $token) {
-    $result = db_query("SELECT * FROM {oauth_token}
-      WHERE type = '%s' AND consumer_key = '%s' AND token_key = '%s'",
-      $token_type, $consumer->key, $token);
-    if ($object = db_fetch_object($result)) {
-      return new OAuthToken($object->token_key, $object->token_secret);
+    $token_secret = db_result(db_query("SELECT token_secret
+      FROM {services_oauth_token}
+      WHERE type = '%s' AND consumer_key = '%s' AND token_key = '%s'", array(
+        ':type' => $token_type,
+        ':consumer_key' => $consumer->key,
+        ':token_key' => $token,
+      )));
+    if ($token_secret) {
+      return new OAuthToken($token, $token_secret);
     }
     throw new OAuthException('Token not found');
   }
@@ -52,25 +58,33 @@ class DrupalOAuthDataStore extends OAuthDataStore {
    * @param $token
    *   Strint. The current token.
    * @param $nonce
-   *   Strint. A new nonce value, in case a one doesnt current exit.
+   *   Strint. A new nonce value, in case a one doesn't current exit.
    * @param $timestamp
    *   Number. The current time.
    * @return
    *   String or NULL. The existing nonce value or NULL in
-   *   case it doesnt exist.
+   *   case it doesn't exist.
    */
   function lookup_nonce($consumer, $token, $nonce, $timestamp) {
-    if (!$nonce_1 = db_result(db_query("SELECT nonce FROM {oauth_nonce}
-      WHERE timestamp <= %d and token = '%s'", $timestamp, $token))) {
-      $sql = array(
+    $stored_nonce = db_result(db_query(
+      "SELECT nonce FROM {services_oauth_nonce}
+      WHERE nonce='%s' AND timestamp <= %d and token = '%s'", array(
+        ':nonce' => $nonce,
+        ':timestamp' => $timestamp,
+        ':token' => $token->key,
+      )));
+
+    if (!$stored_nonce) {
+      $values = array(
         'nonce'     => $nonce,
         'timestamp' => $timestamp,
-        'token'     => $token,
+        'token'     => $token->key,
       );
-      drupal_write_record('oauth_nonce', $sql);
+      drupal_write_record('services_oauth_nonce', $values);
       return NULL;
     }
-    return $nonce_1;
+
+    return $stored_nonce;
   }
 
   /**
@@ -80,17 +94,15 @@ class DrupalOAuthDataStore extends OAuthDataStore {
    *   Object. The service consumer information.
    */
   function new_request_token($consumer) {
-    $user_id = db_result(db_query("SELECT uid FROM {oauth_consumer}
-      WHERE consumer_key = '%s'", $consumer->key));
     $token = new OAuthToken(user_password(32), user_password(32));
-    $sql = array(
+    $values = array(
       'consumer_key'    => $consumer->key,
       'type'            => 'request',
       'token_key'       => $token->key,
       'token_secret'    => $token->secret,
-      'uid'             => $user_id
+      'uid'             => 0,
     );
-    drupal_write_record('oauth_token', $sql);
+    drupal_write_record('services_oauth_token', $values);
     return $token;
   }
 
@@ -103,21 +115,26 @@ class DrupalOAuthDataStore extends OAuthDataStore {
    *   Object. The service consumer information.
    */
   function new_access_token($token_old, $consumer) {
-    if ($object = db_fetch_array(db_query("SELECT * FROM {oauth_token}
-      WHERE type = 'request' AND token_key = '%s'", $token_old->key))) {
-      if ($object['authorized']) {
-        $token_new = new OAuthToken(user_password(32), user_password(32));
-        $sql = array(
-          'consumer_key'    => $consumer->key,
-          'type'            => 'access',
-          'token_key'       => $token_new->key,
-          'token_secret'    => $token_new->secret,
-          'uid'             => $object['uid']
-        );
-        drupal_write_record('oauth_token', $sql, array('uid', 'consumer_key'));
+    module_load_include('inc', 'services_oauth');
+    $obj = services_oauth_get_token($token_old->key);
 
-        return $token_new;
-      }
+    if ($obj && $obj->authorized) {
+      $token_new = new OAuthToken(user_password(32), user_password(32));
+      db_query("DELETE FROM {services_oauth_token} WHERE token_key='%s'", array(
+        ':token_key' => $token_old->key,
+      ));
+
+      $values = array(
+        'token_key'       => $token_new->key,
+        'token_secret'    => $token_new->secret,
+        'type'            => 'access',
+        'uid'             => $obj->uid,
+        'consumer_key'    => $consumer->key,
+        'services'        => $obj->services,
+        'authorized'      => 1,
+      );
+      drupal_write_record('services_oauth_token', $values);
+      return $token_new;
     }
     throw new OAuthException('Invalid request token');
   }
