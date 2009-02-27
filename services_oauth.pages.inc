@@ -147,8 +147,7 @@ function _services_oauth_user_applications($form_state, $account) {
     ),
   );
   $ci = services_oauth_user_consumers($account->uid);
-
-  if (!empty($ci) || user_access('services oauth register consumers', $account)) {
+  if (!empty($ci) || user_access('services oauth register consumers')) {
     $apps = array(
       '#type' => 'fieldset',
       '#title' => t('Applications'),
@@ -181,16 +180,16 @@ function _services_oauth_user_applications($form_state, $account) {
           ),
         );
       }
-
-      if (user_access('services oauth register consumers') || user_access('services oauth register consumers', $account)) {
-        $apps['create_consumer'] = array(
-          '#type' => 'submit',
-          '#value' => 'Add application',
-        );
-      }
-
-      $form['applications'] = $apps;
     }
+
+    if (user_access('services oauth register consumers')) {
+      $apps['create_consumer'] = array(
+        '#type' => 'submit',
+        '#value' => 'Add application',
+      );
+    }
+
+    $form['applications'] = $apps;
   }
 
   if (user_access('access services', $account)) {
