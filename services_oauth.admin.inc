@@ -6,24 +6,6 @@
  */
 
 /**
- * Main module settings.
- */
-function _services_oauth_admin() {
-  $form['services_oauth_crypt'] = array(
-    '#default_value'  => variable_get('services_oauth_crypt', 'HMAC-SHA1'),
-    '#description'    => t('When enabled, all method calls must include a valid OAuth access token and consumer token.'),
-    '#options'        => array(
-      'HMAC-SHA1' => t('HMAC-SHA1'),
-      'RSA-SHA1'  => t('RSA-SHA1'),
-    ),
-    '#title'          => t('OAuth cryptography'),
-    '#type'           => 'radios',
-  );
-
-  return system_settings_form($form);
-}
-
-/**
  * Implementation of hook_user().
  */
 function _services_oauth_user($op, &$edit, &$account, $category = NULL) {
@@ -83,4 +65,8 @@ function _services_oauth_user($op, &$edit, &$account, $category = NULL) {
       '#weight'     => 4,
     );
   }
+}
+
+function _services_oauth_admin_authentication($form_state) {
+
 }

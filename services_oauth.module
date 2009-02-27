@@ -84,6 +84,17 @@ function services_oauth_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  if (variable_get('services_auth_module', 'services') == 'services_oauth') {
+    $menu['admin/build/services/authentication'] = array(
+      'title' => 'Authentication',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('_services_oauth_admin_authentication'),
+      'access arguments' => array('administer services'),
+      'file' => 'services_oauth.admin.inc',
+      'type' => MENU_LOCAL_TASK,
+    );
+  }
+
   return $menu;
 }
 
@@ -181,7 +192,7 @@ function services_oauth_set_user($token=NULL) {
       )));
     if ($uid) {
       global $user;
-      $user = user_load($uid);
+      $user = user_load(array('uid' => $uid));
     }
   }
 }
@@ -193,7 +204,7 @@ function services_oauth_user($op, &$edit, &$account, $category = NULL) {
   global $user;
 
   if ($op == 'delete') {
-    // Delete all tokens related to a user
+    // Delete all tokens and consumers related to a user
     module_load_include('inc', 'services_oauth');
     $consumers = _services_oauth_user_consumer_info($account->uid);
     db_query('DELETE FROM {services_oauth_consumer}
