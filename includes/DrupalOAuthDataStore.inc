@@ -12,7 +12,7 @@ class DrupalOAuthDataStore extends OAuthDataStore {
    *   String. The consumer key.
    */
   function lookup_consumer($consumer_key) {
-    $consumer_secret = db_result(db_query("SELECT consumer_secret FROM {services_oauth_consumer}
+    $consumer_secret = db_result(db_query("SELECT consumer_secret FROM {oauth_common_consumer}
       WHERE consumer_key = '%s'", array(
         ':consumer_key' => $consumer_key,
       )));
@@ -37,7 +37,7 @@ class DrupalOAuthDataStore extends OAuthDataStore {
    */
   function lookup_token($consumer, $token_type, $token) {
     $token_secret = db_result(db_query("SELECT token_secret
-      FROM {services_oauth_token}
+      FROM {oauth_common_token}
       WHERE type = '%s' AND consumer_key = '%s' AND token_key = '%s'", array(
         ':type' => $token_type,
         ':consumer_key' => $consumer->key,
@@ -67,7 +67,7 @@ class DrupalOAuthDataStore extends OAuthDataStore {
    */
   function lookup_nonce($consumer, $token, $nonce, $timestamp) {
     $stored_nonce = db_result(db_query(
-      "SELECT nonce FROM {services_oauth_nonce}
+      "SELECT nonce FROM {oauth_common_nonce}
       WHERE nonce='%s' AND timestamp <= %d and token = '%s'", array(
         ':nonce' => $nonce,
         ':timestamp' => $timestamp,
@@ -80,7 +80,7 @@ class DrupalOAuthDataStore extends OAuthDataStore {
         'timestamp' => $timestamp,
         'token'     => $token->key,
       );
-      drupal_write_record('services_oauth_nonce', $values);
+      drupal_write_record('oauth_common_nonce', $values);
       return NULL;
     }
 
@@ -102,7 +102,7 @@ class DrupalOAuthDataStore extends OAuthDataStore {
       'token_secret'    => $token->secret,
       'uid'             => 0,
     );
-    drupal_write_record('services_oauth_token', $values);
+    drupal_write_record('oauth_common_token', $values);
     return $token;
   }
 
@@ -115,12 +115,12 @@ class DrupalOAuthDataStore extends OAuthDataStore {
    *   Object. The service consumer information.
    */
   function new_access_token($token_old, $consumer) {
-    module_load_include('inc', 'services_oauth');
-    $obj = services_oauth_get_token($token_old->key);
+    module_load_include('inc', 'oauth_common');
+    $obj = oauth_common_get_token($token_old->key);
 
     if ($obj && $obj->authorized) {
       $token_new = new OAuthToken(user_password(32), user_password(32));
-      db_query("DELETE FROM {services_oauth_token} WHERE token_key='%s'", array(
+      db_query("DELETE FROM {oauth_common_token} WHERE token_key='%s'", array(
         ':token_key' => $token_old->key,
       ));
 
@@ -133,7 +133,7 @@ class DrupalOAuthDataStore extends OAuthDataStore {
         'services'        => $obj->services,
         'authorized'      => 1,
       );
-      drupal_write_record('services_oauth_token', $values);
+      drupal_write_record('oauth_common_token', $values);
       return $token_new;
     }
     throw new OAuthException('Invalid request token');

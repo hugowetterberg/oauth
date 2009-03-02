@@ -5,11 +5,11 @@
  * Form for granting access to the consumer
  */
 function _services_oauth_authorize() {
-  module_load_include('inc', 'services_oauth');
+  module_load_include('inc', 'oauth_common');
   $req = DrupalOAuthRequest::from_request();
   $token = $req->get_parameter('oauth_token');
   $callback = $req->get_parameter('oauth_callback');
-  $token = services_oauth_get_token($token);
+  $token = oauth_common_get_token($token);
 
   // Check that we have a valid token
   if (!$token) {
@@ -75,7 +75,7 @@ function _services_oauth_authorize_submit(&$form, &$form_state) {
     'token_key'   => $parameters['oauth_token'],
     'services'    => json_encode(array('*')),
   );
-  drupal_write_record('services_oauth_token', $values, 'token_key');
+  drupal_write_record('oauth_common_token', $values, 'token_key');
 
   // Pick the callback url apart and add the token parameter
   $callback = parse_url($parameters['oauth_callback']);
@@ -138,7 +138,7 @@ function _services_oauth_access_token() {
 
 function _services_oauth_user_applications($form_state, $account) {
   drupal_set_title(check_plain($account->name));
-  module_load_include('inc', 'services_oauth');
+  module_load_include('inc', 'oauth_common');
 
   $form = array(
     'uid' => array(
@@ -146,7 +146,7 @@ function _services_oauth_user_applications($form_state, $account) {
       '#value' => $account->uid,
     ),
   );
-  $ci = services_oauth_user_consumers($account->uid);
+  $ci = oauth_common_user_consumers($account->uid);
   if (!empty($ci) || user_access('services oauth register consumers')) {
     $apps = array(
       '#type' => 'fieldset',
@@ -245,10 +245,10 @@ function _services_oauth_user_applications_add($form_state, $account) {
 }
 
 function _services_oauth_user_applications_add_submit($form, $form_state) {
-  module_load_include('inc', 'services_oauth');
+  module_load_include('inc', 'oauth_common');
 
   $v = $form_state['values'];
-  $key = services_oauth_create_consumer($v['uid'], $v['name'], $v['type']);
+  $key = oauth_common_create_consumer($v['uid'], $v['name'], $v['type']);
   drupal_set_message(t('Added the application !name', array('!name' => $v['name'])));
   drupal_goto(sprintf('user/%d/applications', $v['uid']));
 }

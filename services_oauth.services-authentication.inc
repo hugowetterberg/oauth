@@ -7,7 +7,9 @@ function services_oauth_services_authenticate_call($method, $args) {
   }
 
   try {
-    list($consumer, $token) = services_oauth_verify_request();
+    module_load_include('inc', 'oauth_common');
+
+    list($consumer, $token) = oauth_common_verify_request();
 
     if ($consumer==NULL) {
       throw new OAuthException('Missing consumer token');
@@ -17,7 +19,7 @@ function services_oauth_services_authenticate_call($method, $args) {
       throw new OAuthException('Missing access token');
     }
 
-    services_oauth_set_user($token);
+    oauth_common_set_user($token);
   }
   catch (OAuthException $e) {
     drupal_set_header(sprintf('WWW-Authenticate: OAuth realm="%s"', url('', array('absolute'=>TRUE))));

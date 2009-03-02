@@ -1,0 +1,5 @@
+; $Id$
+name = OAuth Common
+description = Provides common OAuth functionality
+dependencies[] = autoload
+core = 6.x

@@ -1,0 +1,42 @@
+<?php
+
+/**
+ * Implementation hook_autoload_info().
+ */
+function oauth_common_autoload_info() {
+  $lib = array('file' => 'lib/OAuth.php');
+
+  return array(
+    'DrupalOAuthServer'   => array('file' => 'includes/DrupalOAuthServer.inc'),
+    'DrupalOAuthDataStore'=> array('file' => 'includes/DrupalOAuthDataStore.inc'),
+    'DrupalOAuthRequest'  => array('file' => 'includes/DrupalOAuthRequest.inc'),
+    'OAuthServer'     => $lib,
+    'OAuthDataStore'  => $lib,
+    'OAuthRequest'    => $lib,
+    'OAuthConsumer'   => $lib,
+    'OAuthToken'      => $lib,
+  );
+}
+
+/**
+ * Implementation of hook_user().
+ */
+function oauth_common_user($op, &$edit, &$account, $category = NULL) {
+  global $user;
+
+  if ($op == 'delete') {
+    // Delete all tokens and consumers related to a user
+    module_load_include('inc', 'oauth_common');
+    $consumers = _services_oauth_user_consumer_info($account->uid);
+    db_query('DELETE FROM {oauth_common_consumer}
+      WHERE uid = %d', array(
+        ':uid' => $account->uid,
+      ));
+    db_query("DELETE FROM {oauth_common_token}
+      WHERE uid = %d OR consumer_key = '%s'", array(
+        ':uid' => $account->uid,
+        ':consumer_key' => $consumer->consumer_key,
+      ));
+  }
+}
+
