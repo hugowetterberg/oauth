@@ -47,18 +47,6 @@ function oauth_common_create_consumer($uid, $name, $type) {
 }
 
 /**
- * Gets the token with the specified key
- *
- * @param string $key
- *  The key of the token to get
- */
-function oauth_common_get_token($key) {
-  return db_fetch_object(db_query("SELECT * FROM {oauth_common_token} WHERE token_key='%s'", array(
-    ':token_key' => $key,
-  )));
-}
-
-/**
  * Sets the global user object to the user associated
  * with the provided token.
  *

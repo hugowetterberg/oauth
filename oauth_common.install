@@ -13,16 +13,16 @@ function oauth_common_schema() {
   $schema = array();
 
   $schema['oauth_common_consumer'] = array(
-    'description' => t('Consumer keys for users that can consume services.'),
+    'description' => t('Information that allows external applications to access services.'),
     'fields' => array(
-      'consumer_key' => array(
-        'description' => t('Consumer key allow the user to contact the services API as an external application.'),
+      'key' => array(
+        'description' => t('Consumer key.'),
         'type'        => 'varchar',
         'length'      => 32,
         'not null'    => TRUE
       ),
-      'consumer_secret' => array(
-        'description' => t('Consumer key "password".'),
+      'secret' => array(
+        'description' => t('Consumer secret.'),
         'type'        => 'varchar',
         'length'      => 32,
         'not null'    => TRUE
@@ -45,59 +45,100 @@ function oauth_common_schema() {
         'length'      => 32,
         'not null'    => TRUE,
       ),
+      'callback_url' => array(
+        'description' => t('Callback url.'),
+        'type'        => 'varchar',
+        'length'      => 255,
+        'not null'    => TRUE
+      ),
     ),
-    'primary key' => array('consumer_key'),
+    'primary key' => array('key'),
     'index' => array(
       'user' => array('uid'),
     ),
   );
   $schema['oauth_common_token'] = array(
-    'description' => t('Tokens for request and services accesses.'),
+    'description' => t('Tokens stored on behalf of providers for request and services accesses.'),
     'fields' => array(
-      'token_key' => array(
-        'description' => t('Tokens for request and services accesses.'),
+      'key' => array(
+        'description' => t('Token key.'),
         'type'        => 'varchar',
         'length'      => 32,
-        'not null'    => TRUE
+        'not null'    => TRUE,
       ),
-      'token_secret' => array(
-        'description' => t('Token "password".'),
+      'secret' => array(
+        'description' => t('Token secret.'),
         'type'        => 'varchar',
         'length'      => 32,
-        'not null'    => TRUE
+        'not null'    => TRUE,
       ),
       'type' => array(
-        'description' => t('Type of the token: request or access.'),
+        'description' => t('Token type: request or access.'),
         'type'        => 'varchar',
         'length'      => 7,
-        'not null'    => TRUE
+        'not null'    => TRUE,
       ),
       'uid' => array(
         'description' => t('User ID from {user}.uid.'),
         'type'        => 'int',
         'unsigned'    => TRUE,
-        'not null'    => TRUE
+        'not null'    => TRUE,
+        'default'     => 0,
       ),
       'consumer_key' => array(
         'description' => t('Consumer key from {oauth_common_consumer}.consumer_key.'),
         'type'        => 'varchar',
         'length'      => 32,
-        'not null'    => TRUE
+        'not null'    => TRUE,
       ),
       'services' => array(
         'description' => t('An array of services that the user allowed the consumer to access.'),
         'type'        => 'text',
       ),
       'authorized' => array(
-        'description' => t('In case its a request token, it checks if the user already authorized him to get an access token.'),
+        'description' => t('In case its a request token, it checks if the user already authorized the consumer to get an access token.'),
         'type'        => 'int',
         'size'        => 'tiny',
-        'default'     => 0
+        'default'     => 0,
       ),
     ),
-   'primary key' => array('token_key'),
+   'primary key' => array('key'),
    'indexes' => array(
-      'token_key_type' => array('token_key', 'type'),
+      'token_key_type' => array('key', 'type'),
+    ),
+  );
+  $schema['oauth_common_consumer_token'] = array(
+    'description' => t('Tokens stored on behalf of consumers for request and services accesses.'),
+    'fields' => array(
+      'key' => array(
+        'description' => t('Token key.'),
+        'type'        => 'varchar',
+        'length'      => 32,
+        'not null'    => TRUE
+      ),
+      'secret' => array(
+        'description' => t('Token secret.'),
+        'type'        => 'varchar',
+        'length'      => 32,
+        'not null'    => TRUE
+      ),
+      'type' => array(
+        'description' => t('Type of the token: request, access or consumer.'),
+        'type'        => 'varchar',
+        'length'      => 7,
+        'not null'    => TRUE
+      ),
+      'uid' => array(
+        'description' => t('The user that\'s associated with the token, if any.'),
+        'type'        => 'int',
+        'unsigned'    => TRUE,
+        'not null'    => TRUE,
+        'default'     => 0,
+      ),
+    ),
+   'primary key' => array('key'),
+   'indexes' => array(
+      'token_key_type' => array('key', 'type'),
     ),
   );
   $schema['oauth_common_nonce'] = array(

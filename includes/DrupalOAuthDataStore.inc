@@ -8,8 +8,12 @@ class DrupalOAuthDataStore extends OAuthDataStore {
   /**
    * Check if consumer exists from a given consumer key.
    *
-   * @param $consumer_key
-   *   String. The consumer key.
+   * @param string $consumer_key
+   *   The consumer key.
+   * @return OAuthConsumer
+   *  The consumer
+   * @throws OAuthException
+   *  An exception is thrown when the consumer cannot be found
    */
   function lookup_consumer($consumer_key) {
     $consumer_secret = db_result(db_query("SELECT consumer_secret FROM {oauth_common_consumer}
@@ -25,26 +29,24 @@ class DrupalOAuthDataStore extends OAuthDataStore {
   /**
    * Check if the token exists.
    *
-   * @param $consumer
-   *   Object. The service consumer information.
-   * @param $token_type
-   *   Strint. The type of the token: 'request' or 'access'.
-   * @param $token
-   *   Strint. The token value.
-   * @return
-   *   String or NULL. The existing token or NULL in
-   *   case it doesnt exist.
+   * @param OAuthConsumer $consumer
+   *  The consumer.
+   * @param string $token_type
+   *  The type of the token: 'request' or 'access'.
+   * @param string $token
+   *  The token key.
+   * @return DrupalOauthToken
+   *  The matching token
+   * @throws OAuthException
+   *  An exception is thrown when the token cannot be found or doesn't match
    */
   function lookup_token($consumer, $token_type, $token) {
-    $token_secret = db_result(db_query("SELECT token_secret
-      FROM {oauth_common_token}
-      WHERE type = '%s' AND consumer_key = '%s' AND token_key = '%s'", array(
-        ':type' => $token_type,
-        ':consumer_key' => $consumer->key,
-        ':token_key' => $token,
-      )));
-    if ($token_secret) {
-      return new OAuthToken($token, $token_secret);
+    $token = DrupalOauthToken::load($token);
+    if ($token) {
+      if ($token->type==$token_type && $token->consumer_key==$consumer->key) {
+        return $token;
+      }
+      throw new OAuthException('No matching token was found, token type or consumer key mismatch');
     }
     throw new OAuthException('Token not found');
   }
@@ -52,17 +54,17 @@ class DrupalOAuthDataStore extends OAuthDataStore {
   /**
    * Check if the nonce value exists. If not, generate one.
    *
-   * @param $consumer
-   *   Object. The service consumer information with both key
+   * @param OAuthConsumer $consumer
+   *   The service consumer information with both key
    *   and secret values.
-   * @param $token
-   *   Strint. The current token.
-   * @param $nonce
-   *   Strint. A new nonce value, in case a one doesn't current exit.
-   * @param $timestamp
-   *   Number. The current time.
-   * @return
-   *   String or NULL. The existing nonce value or NULL in
+   * @param OAuthToken $token
+   *   The current token.
+   * @param string $nonce
+   *   A new nonce value, in case a one doesn't current exit.
+   * @param int $timestamp
+   *   The current time.
+   * @return string
+   *   The existing nonce value or NULL in
    *   case it doesn't exist.
    */
   function lookup_nonce($consumer, $token, $nonce, $timestamp) {
@@ -90,52 +92,45 @@ class DrupalOAuthDataStore extends OAuthDataStore {
   /**
    * Generate a new request token.
    *
-   * @param $consumer
-   *   Object. The service consumer information.
+   * @param OAuthConsumer $consumer
+   *  The consumer to generate a token for.
+   * @return DrupalOAuthToken
+   *  The request token
    */
   function new_request_token($consumer) {
-    $token = new OAuthToken(user_password(32), user_password(32));
-    $values = array(
+    $token = new DrupalOAuthToken(user_password(32), user_password(32), array(
       'consumer_key'    => $consumer->key,
       'type'            => 'request',
-      'token_key'       => $token->key,
-      'token_secret'    => $token->secret,
       'uid'             => 0,
-    );
-    drupal_write_record('oauth_common_token', $values);
+    ));
+    $token->write();
     return $token;
   }
 
   /**
    * Generate a new access token and delete the old request token.
    *
-   * @param $token_old
-   *   Strint. The old request token.
-   * @param $consumer
-   *   Object. The service consumer information.
+   * @param DrupalOAuthToken $token_old
+   *   The old request token.
+   * @param OAuthConsumer $consumer
+   *   The service consumer information.
    */
   function new_access_token($token_old, $consumer) {
     module_load_include('inc', 'oauth_common');
-    $obj = oauth_common_get_token($token_old->key);
 
-    if ($obj && $obj->authorized) {
-      $token_new = new OAuthToken(user_password(32), user_password(32));
-      db_query("DELETE FROM {oauth_common_token} WHERE token_key='%s'", array(
-        ':token_key' => $token_old->key,
-      ));
-
-      $values = array(
-        'token_key'       => $token_new->key,
-        'token_secret'    => $token_new->secret,
+    if ($token_old && $token_old->authorized) {
+      $token_new = new OAuthToken(user_password(32), user_password(32), array(
         'type'            => 'access',
         'uid'             => $obj->uid,
         'consumer_key'    => $consumer->key,
         'services'        => $obj->services,
         'authorized'      => 1,
-      );
-      drupal_write_record('oauth_common_token', $values);
+      ));
+      $token_old->delete();
+      $token_new->write();
       return $token_new;
     }
+
     throw new OAuthException('Invalid request token');
   }
 }

@@ -10,6 +10,8 @@ function oauth_common_autoload_info() {
     'DrupalOAuthServer'   => array('file' => 'includes/DrupalOAuthServer.inc'),
     'DrupalOAuthDataStore'=> array('file' => 'includes/DrupalOAuthDataStore.inc'),
     'DrupalOAuthRequest'  => array('file' => 'includes/DrupalOAuthRequest.inc'),
+    'DrupalOAuthToken'    => array('file' => 'includes/DrupalOAuthRequest.inc'),
+    'DrupalOAuthConsumer' => array('file' => 'includes/DrupalOAuthRequest.inc'),
     'OAuthServer'     => $lib,
     'OAuthDataStore'  => $lib,
     'OAuthRequest'    => $lib,
