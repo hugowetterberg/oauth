@@ -68,12 +68,12 @@ class DrupalOAuthConsumerToken extends OAuthToken {
    * @param resource $res
    *  A database result resource
    * @return DrupalOAuthConsumerToken
-   *  The constructed token object or FALSE if no rows could be read or construction failed
+   *  The constructed token object or NULL if no rows could be read or construction failed
    */
   public static function fromResult($res) {
     if ($data = db_fetch_array($res)) {
       return new DrupalOAuthConsumerToken($data['token_key'], $data['secret'], $data);
     }
-    return FALSE;
+    return NULL;
   }
 }

@@ -72,13 +72,13 @@ class DrupalOAuthToken extends OAuthToken {
    * @param resource $res
    *  A database result resource
    * @return DrupalOAuthToken
-   *  The constructed token object or FALSE if no rows could be read or construction failed
+   *  The constructed token object or NULL if no rows could be read or construction failed
    */
   public static function fromResult($res) {
     if ($data = db_fetch_array($res)) {
       $data['services'] = json_decode($data['services']);
       return new DrupalOAuthToken($data['token_key'], $data['secret'], $data);
     }
-    return FALSE;
+    return NULL;
   }
 }

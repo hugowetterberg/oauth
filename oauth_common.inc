@@ -47,15 +47,26 @@ function oauth_common_set_user($token=NULL) {
  * Verifies the request
  *
  * @return array
- *  An array containing the validated consumer and token
+ *  An array containing three elements. The first is TRUE if the request was
+ *  signed, otherwise FALSE. Then comes the validated consumer and token objects.
  */
 function oauth_common_verify_request() {
   $req = DrupalOAuthRequest::from_request();
   // Verify
   $consumer = $req->get_parameter('oauth_consumer_key');
   if (!empty($consumer)) {
-    $server = new DrupalOAuthServer();
-    return $server->verify_request($req);
+    // Only verify request if we got a signature
+    if (!empty($req->get_parameter('oauth_signature'))) {
+      $server = new DrupalOAuthServer();
+      return array_merge(array(TRUE), $server->verify_request($req));
+    }
+    else {
+      $token_key = $req->get_parameter('oauth_token');
+      if (empty($token_key) || !($token=DrupalOAuthToken::load($token_key))) {
+        $token = NULL;
+      }
+      return array(FALSE, DrupalOAuthConsumer::load($consumer), $token)
+    }
   }
-  return array(NULL,NULL);
+  return array(FALSE, NULL,NULL);
 }

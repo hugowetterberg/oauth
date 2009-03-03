@@ -27,7 +27,7 @@ function oauth_common_menu() {
   $menu['oauth/test/valid-consumer'] = array(
     'file' => 'oauth_common.pages.inc',
     'page callback' => '_oauth_common_validate_request_callback',
-    'page arguments' => array('consumer'),
+    'page arguments' => array('consumer', 3),
     'access arguments' => array('access content'),
     'type' => MENU_CALLBACK,
   );
@@ -35,7 +35,7 @@ function oauth_common_menu() {
   $menu['oauth/test/valid-access-token'] = array(
     'file' => 'oauth_common.pages.inc',
     'page callback' => '_oauth_common_validate_request_callback',
-    'page arguments' => array('access token'),
+    'page arguments' => array('access token', 3),
     'access arguments' => array('access content'),
     'type' => MENU_CALLBACK,
   );

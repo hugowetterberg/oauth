@@ -70,12 +70,12 @@ class DrupalOAuthConsumer extends OAuthConsumer {
    * @param resource $res
    *  A database result resource
    * @return DrupalOAuthConsumer
-   *  The constructed consumer object or FALSE if no rows could be read or construction failed
+   *  The constructed consumer object or NULL if no rows could be read or construction failed
    */
   public static function fromResult($res) {
     if ($data = db_fetch_array($res)) {
       return new DrupalOAuthConsumer($data['consumer_key'], $data['secret'],  $data['callback_url'], $data);
     }
-    return FALSE;
+    return NULL;
   }
 }

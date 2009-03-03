@@ -1,14 +1,18 @@
 <?php
 // $Id$
 
-function _oauth_common_validate_request_callback($type) {
+function _oauth_common_validate_request_callback($type, $unsigned=FALSE) {
   try {
     module_load_include('inc', 'oauth_common');
 
-    list($consumer, $token) = oauth_common_verify_request();
+    list($signed, $consumer, $token) = oauth_common_verify_request();
 
     if ($consumer==NULL) {
       throw new OAuthException('Missing consumer token');
+    }
+
+    if (!$signed && !$unsigned) {
+      throw new OAuthException('The request wasn\'t signed');
     }
 
     if ($token==NULL && $type=='access token') {
