@@ -21,6 +21,28 @@ function oauth_common_autoload_info() {
   );
 }
 
+function oauth_common_menu() {
+  $menu = array();
+
+  $menu['oauth/test/valid-consumer'] = array(
+    'file' => 'oauth_common.pages.inc',
+    'page callback' => '_oauth_common_validate_request_callback',
+    'page arguments' => array('consumer'),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
+  $menu['oauth/test/valid-access-token'] = array(
+    'file' => 'oauth_common.pages.inc',
+    'page callback' => '_oauth_common_validate_request_callback',
+    'page arguments' => array('access token'),
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $menu;
+}
+
 /**
  * Implementation of hook_user().
  */
