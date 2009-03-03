@@ -47,7 +47,7 @@ class DrupalOAuthToken extends OAuthToken {
    * @return void
    */
   public static function deleteToken($key) {
-    db_query("DELETE FROM {oauth_common_token} WHERE key='%s'", array(
+    db_query("DELETE FROM {oauth_common_token} WHERE token_key='%s'", array(
       'key' => $key,
     ));
   }
@@ -60,8 +60,8 @@ class DrupalOAuthToken extends OAuthToken {
    * @return DrupalOAuthToken
    *  The loaded token object or FALSE if load failed
    */
-  public static load($key) {
-    return self::fromResult(db_query("SELECT * FROM {oauth_common_token} WHERE key='%s'", array(
+  public static function load($key) {
+    return self::fromResult(db_query("SELECT * FROM {oauth_common_token} WHERE token_key='%s'", array(
       ':key' => $key,
     )));
   }
@@ -74,10 +74,10 @@ class DrupalOAuthToken extends OAuthToken {
    * @return DrupalOAuthToken
    *  The constructed token object or FALSE if no rows could be read or construction failed
    */
-  public static fromResult($res) {
+  public static function fromResult($res) {
     if ($data = db_fetch_array($res)) {
       $data['services'] = json_decode($data['services']);
-      return new DrupalOauthToken($data['token_key'], $data['secret'], $data);
+      return new DrupalOAuthToken($data['token_key'], $data['secret'], $data);
     }
     return FALSE;
   }
