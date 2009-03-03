@@ -45,7 +45,7 @@ class DrupalOAuthConsumer extends OAuthConsumer {
    * @return void
    */
   public static function deleteConsumer($key) {
-    db_query("DELETE FROM {oauth_common_consumer} WHERE key='%s'", array(
+    db_query("DELETE FROM {oauth_common_consumer} WHERE consumer_key='%s'", array(
       'key' => $key,
     ));
   }
@@ -59,7 +59,7 @@ class DrupalOAuthConsumer extends OAuthConsumer {
    *  The loaded consumer object or FALSE if load failed
    */
   public static function load($key) {
-    return self::fromResult(db_query("SELECT * FROM {oauth_common_consumer} WHERE key='%s'", array(
+    return self::fromResult(db_query("SELECT * FROM {oauth_common_consumer} WHERE consumer_key='%s'", array(
       ':key' => $key,
     )));
   }
