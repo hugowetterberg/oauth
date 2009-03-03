@@ -25,8 +25,9 @@ class DrupalOAuthToken extends OAuthToken {
    * @return void
    */
   public function write($update=FALSE) {
-    $primary = $update ? array('key') : array();
+    $primary = $update ? array('token_key') : array();
     $values = get_object_vars($this);
+    $values['token_key'] = $this->key;
     $values['services'] = json_encode($values['services']);
     drupal_write_record('oauth_common_token', $values, $primary);
   }
@@ -76,7 +77,7 @@ class DrupalOAuthToken extends OAuthToken {
   public static fromResult($res) {
     if ($data = db_fetch_array($res)) {
       $data['services'] = json_decode($data['services']);
-      return new DrupalOauthToken($data['key'], $data['secret'], $data);
+      return new DrupalOauthToken($data['token_key'], $data['secret'], $data);
     }
     return FALSE;
   }

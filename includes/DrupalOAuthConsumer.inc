@@ -25,7 +25,9 @@ class DrupalOAuthConsumer extends OAuthConsumer {
    */
   public function write($update=FALSE) {
     $primary = $update ? array('consumer_key') : array();
-    drupal_write_record('oauth_common_consumer', $this, $primary);
+    $values = get_object_vars($this);
+    $values['consumer_key'] = $this->key;
+    drupal_write_record('oauth_common_consumer', $values, $primary);
   }
 
   /**
@@ -72,7 +74,7 @@ class DrupalOAuthConsumer extends OAuthConsumer {
    */
   public static fromResult($res) {
     if ($data = db_fetch_array($res)) {
-      return new DrupalOAuthConsumer($data['key'], $data['secret'],  $data['callback_url'], $data);
+      return new DrupalOAuthConsumer($data['consumer_key'], $data['secret'],  $data['callback_url'], $data);
     }
     return FALSE;
   }

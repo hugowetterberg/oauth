@@ -15,7 +15,7 @@ function oauth_common_schema() {
   $schema['oauth_common_consumer'] = array(
     'description' => t('Information that allows external applications to access services.'),
     'fields' => array(
-      'key' => array(
+      'consumer_key' => array(
         'description' => t('Consumer key.'),
         'type'        => 'varchar',
         'length'      => 32,
@@ -52,7 +52,7 @@ function oauth_common_schema() {
         'not null'    => TRUE
       ),
     ),
-    'primary key' => array('key'),
+    'primary key' => array('consumer_key'),
     'index' => array(
       'user' => array('uid'),
     ),
@@ -60,7 +60,7 @@ function oauth_common_schema() {
   $schema['oauth_common_token'] = array(
     'description' => t('Tokens stored on behalf of providers for request and services accesses.'),
     'fields' => array(
-      'key' => array(
+      'token_key' => array(
         'description' => t('Token key.'),
         'type'        => 'varchar',
         'length'      => 32,
@@ -99,18 +99,19 @@ function oauth_common_schema() {
         'description' => t('In case its a request token, it checks if the user already authorized the consumer to get an access token.'),
         'type'        => 'int',
         'size'        => 'tiny',
+        'not null'    => TRUE,
         'default'     => 0,
       ),
     ),
-   'primary key' => array('key'),
+   'primary key' => array('token_key'),
    'indexes' => array(
-      'token_key_type' => array('key', 'type'),
+      'token_key_type' => array('token_key', 'type'),
     ),
   );
   $schema['oauth_common_consumer_token'] = array(
     'description' => t('Tokens stored on behalf of consumers for request and services accesses.'),
     'fields' => array(
-      'key' => array(
+      'token_key' => array(
         'description' => t('Token key.'),
         'type'        => 'varchar',
         'length'      => 32,
@@ -136,9 +137,9 @@ function oauth_common_schema() {
         'default'     => 0,
       ),
     ),
-   'primary key' => array('key'),
+   'primary key' => array('token_key'),
    'indexes' => array(
-      'token_key_type' => array('key', 'type'),
+      'token_key_type' => array('token_key', 'type'),
     ),
   );
   $schema['oauth_common_nonce'] = array(
