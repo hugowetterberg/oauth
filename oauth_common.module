@@ -7,11 +7,12 @@ function oauth_common_autoload_info() {
   $lib = array('file' => 'lib/OAuth.php');
 
   return array(
-    'DrupalOAuthServer'   => array('file' => 'includes/DrupalOAuthServer.inc'),
-    'DrupalOAuthDataStore'=> array('file' => 'includes/DrupalOAuthDataStore.inc'),
-    'DrupalOAuthRequest'  => array('file' => 'includes/DrupalOAuthRequest.inc'),
-    'DrupalOAuthToken'    => array('file' => 'includes/DrupalOAuthRequest.inc'),
-    'DrupalOAuthConsumer' => array('file' => 'includes/DrupalOAuthRequest.inc'),
+    'DrupalOAuthServer'         => array('file' => 'includes/DrupalOAuthServer.inc'),
+    'DrupalOAuthDataStore'      => array('file' => 'includes/DrupalOAuthDataStore.inc'),
+    'DrupalOAuthRequest'        => array('file' => 'includes/DrupalOAuthRequest.inc'),
+    'DrupalOAuthToken'          => array('file' => 'includes/DrupalOAuthToken.inc'),
+    'DrupalOAuthConsumerToken'  => array('file' => 'includes/DrupalOAuthConsumerToken.inc'),
+    'DrupalOAuthConsumer'       => array('file' => 'includes/DrupalOAuthConsumer.inc'),
     'OAuthServer'     => $lib,
     'OAuthDataStore'  => $lib,
     'OAuthRequest'    => $lib,
