@@ -58,7 +58,7 @@ class DrupalOAuthConsumer extends OAuthConsumer {
    * @return DrupalOAuthConsumer
    *  The loaded consumer object or FALSE if load failed
    */
-  public static load($key) {
+  public static function load($key) {
     return self::fromResult(db_query("SELECT * FROM {oauth_common_consumer} WHERE key='%s'", array(
       ':key' => $key,
     )));
@@ -72,7 +72,7 @@ class DrupalOAuthConsumer extends OAuthConsumer {
    * @return DrupalOAuthConsumer
    *  The constructed consumer object or FALSE if no rows could be read or construction failed
    */
-  public static fromResult($res) {
+  public static function fromResult($res) {
     if ($data = db_fetch_array($res)) {
       return new DrupalOAuthConsumer($data['consumer_key'], $data['secret'],  $data['callback_url'], $data);
     }

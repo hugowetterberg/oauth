@@ -14,36 +14,10 @@ function oauth_common_user_consumers($uid) {
     ':uid' => $uid,
   ));
   $consumers = array();
-  while ($consumer = db_fetch_object($result)) {
+  while ($consumer = DrupalOAuthConsumer::fromResult($result)) {
     $consumers[] = $consumer;
   }
   return $consumers;
-}
-
-/**
- * Creates a consumer
- *
- * @param int $uid
- *  The user that owns the consumer
- * @param string $name
- *  The name of the consumer
- * @param string $type
- *  The type of the consumer
- * @return string
- *  The consumer key
- */
-function oauth_common_create_consumer($uid, $name, $type) {
-  $token = new OAuthToken(user_password(32), user_password(32));
-  $values = array(
-    'consumer_key' => $token->key,
-    'consumer_secret' => $token->secret,
-    'uid' => $uid,
-    'name' => $name,
-    'type' => $type,
-  );
-  drupal_write_record('oauth_common_consumer', $values);
-
-  return $token->key;
 }
 
 /**
