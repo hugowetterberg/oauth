@@ -43,7 +43,7 @@ class DrupalOAuthConsumerToken extends OAuthToken {
    * @return void
    */
   public static function deleteToken($key) {
-    db_query("DELETE FROM {oauth_common_consumer_token} WHERE key='%s'", array(
+    db_query("DELETE FROM {oauth_common_consumer_token} WHERE token_key='%s'", array(
       'key' => $key,
     ));
   }
@@ -57,7 +57,7 @@ class DrupalOAuthConsumerToken extends OAuthToken {
    *  The loaded token object or FALSE if load failed
    */
   public static function load($key) {
-    return self::fromResult(db_query("SELECT * FROM {oauth_common_consumer_token} WHERE key='%s'", array(
+    return self::fromResult(db_query("SELECT * FROM {oauth_common_consumer_token} WHERE token_key='%s'", array(
       ':key' => $key,
     )));
   }
@@ -72,7 +72,7 @@ class DrupalOAuthConsumerToken extends OAuthToken {
    */
   public static function fromResult($res) {
     if ($data = db_fetch_array($res)) {
-      return new DrupalOauthToken($data['token_key'], $data['secret'], $data);
+      return new DrupalOAuthConsumerToken($data['token_key'], $data['secret'], $data);
     }
     return FALSE;
   }
