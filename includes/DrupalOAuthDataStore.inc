@@ -16,12 +16,9 @@ class DrupalOAuthDataStore extends OAuthDataStore {
    *  An exception is thrown when the consumer cannot be found
    */
   function lookup_consumer($consumer_key) {
-    $consumer_secret = db_result(db_query("SELECT consumer_secret FROM {oauth_common_consumer}
-      WHERE consumer_key = '%s'", array(
-        ':consumer_key' => $consumer_key,
-      )));
-    if ($consumer_secret) {
-      return new OAuthConsumer($consumer_key, $consumer_secret);
+    $consumer = DrupalOAuthConsumer::load($consumer_key);
+    if ($consumer) {
+      return $consumer;
     }
     throw new OAuthException('Consumer not found');
   }
