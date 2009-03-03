@@ -126,7 +126,7 @@ function oauth_common_schema() {
       'type' => array(
         'description' => t('Type of the token: request, access or consumer.'),
         'type'        => 'varchar',
-        'length'      => 7,
+        'length'      => 8,
         'not null'    => TRUE
       ),
       'uid' => array(
