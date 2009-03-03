@@ -56,7 +56,7 @@ class DrupalOAuthConsumerToken extends OAuthToken {
    * @return DrupalOAuthConsumerToken
    *  The loaded token object or FALSE if load failed
    */
-  public static load($key) {
+  public static function load($key) {
     return self::fromResult(db_query("SELECT * FROM {oauth_common_consumer_token} WHERE key='%s'", array(
       ':key' => $key,
     )));
@@ -70,7 +70,7 @@ class DrupalOAuthConsumerToken extends OAuthToken {
    * @return DrupalOAuthConsumerToken
    *  The constructed token object or FALSE if no rows could be read or construction failed
    */
-  public static fromResult($res) {
+  public static function fromResult($res) {
     if ($data = db_fetch_array($res)) {
       return new DrupalOauthToken($data['token_key'], $data['secret'], $data);
     }
