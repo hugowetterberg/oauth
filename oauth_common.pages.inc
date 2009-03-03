@@ -1,7 +1,7 @@
 <?php
 // $Id$
 
-function _oauth_common_validate_request_callback($type, $unsigned=FALSE) {
+function _oauth_common_validate_request_callback($type, $unsigned=NULL) {
   try {
     module_load_include('inc', 'oauth_common');
 
@@ -11,7 +11,7 @@ function _oauth_common_validate_request_callback($type, $unsigned=FALSE) {
       throw new OAuthException('Missing consumer token');
     }
 
-    if (!$signed && !$unsigned) {
+    if (!$signed && $unsigned!='unsigned') {
       throw new OAuthException('The request wasn\'t signed');
     }
 

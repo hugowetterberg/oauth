@@ -56,7 +56,8 @@ function oauth_common_verify_request() {
   $consumer = $req->get_parameter('oauth_consumer_key');
   if (!empty($consumer)) {
     // Only verify request if we got a signature
-    if (!empty($req->get_parameter('oauth_signature'))) {
+    $signature = $req->get_parameter('oauth_signature');
+    if (!empty($signature)) {
       $server = new DrupalOAuthServer();
       return array_merge(array(TRUE), $server->verify_request($req));
     }
@@ -65,7 +66,7 @@ function oauth_common_verify_request() {
       if (empty($token_key) || !($token=DrupalOAuthToken::load($token_key))) {
         $token = NULL;
       }
-      return array(FALSE, DrupalOAuthConsumer::load($consumer), $token)
+      return array(FALSE, DrupalOAuthConsumer::load($consumer), $token);
     }
   }
   return array(FALSE, NULL,NULL);
