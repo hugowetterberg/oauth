@@ -38,7 +38,7 @@ class DrupalOAuthDataStore extends OAuthDataStore {
    *  An exception is thrown when the token cannot be found or doesn't match
    */
   function lookup_token($consumer, $token_type, $token) {
-    $token = DrupalOauthToken::load($token);
+    $token = DrupalOAuthToken::load($token);
     if ($token) {
       if ($token->type==$token_type && $token->consumer_key==$consumer->key) {
         return $token;
@@ -116,11 +116,11 @@ class DrupalOAuthDataStore extends OAuthDataStore {
     module_load_include('inc', 'oauth_common');
 
     if ($token_old && $token_old->authorized) {
-      $token_new = new OAuthToken(user_password(32), user_password(32), array(
+      $token_new = new DrupalOAuthToken(user_password(32), user_password(32), array(
         'type'            => 'access',
-        'uid'             => $obj->uid,
+        'uid'             => $token_old->uid,
         'consumer_key'    => $consumer->key,
-        'services'        => $obj->services,
+        'services'        => $token_old->services,
         'authorized'      => 1,
       ));
       $token_old->delete();
