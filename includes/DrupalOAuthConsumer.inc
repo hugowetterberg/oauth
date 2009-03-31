@@ -4,6 +4,8 @@
 class DrupalOAuthConsumer extends OAuthConsumer {
   public $uid = 0;
   public $name = '';
+  public $created = 0;
+  public $changed = 0;
   public $type = '';
   public $callback_url = NULL;
 
@@ -25,8 +27,20 @@ class DrupalOAuthConsumer extends OAuthConsumer {
    */
   public function write($update=FALSE) {
     $primary = $update ? array('consumer_key') : array();
+
+    if (!$update) {
+      $this->created = time();
+    }
+    $this->changed = time();
+
     $values = get_object_vars($this);
     $values['consumer_key'] = $this->key;
+
+    // Stop the created time from being modified
+    if ($update) {
+      unset($values['created']);
+    }
+
     drupal_write_record('oauth_common_consumer', $values, $primary);
   }
 

@@ -21,6 +21,25 @@ function oauth_common_user_consumers($uid) {
 }
 
 /**
+ * Return information about access tokens related to a user.
+ *
+ * @param int $uid
+ *  User ID to retrieve consumer info for.
+ * @return array
+ *  An array of consumer info
+ */
+function oauth_common_user_access_tokens($uid) {
+  $result = db_query("SELECT * FROM {oauth_common_token} WHERE uid = %d AND type = 'access'", array(
+    ':uid' => $uid,
+  ));
+  $tokens = array();
+  while ($token = DrupalOAuthToken::fromResult($result)) {
+    $tokens[] = $token;
+  }
+  return $tokens;
+}
+
+/**
  * Verifies the request
  *
  * @return array

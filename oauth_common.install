@@ -27,6 +27,18 @@ function oauth_common_schema() {
         'length'      => 32,
         'not null'    => TRUE
       ),
+      'created' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The time that the consumer was created, as a Unix timestamp.',
+      ),
+      'changed' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The last time the consumer was edited, as a Unix timestamp.',
+      ),
       'uid' => array(
         'description' => t('The application owner.'),
         'type'        => 'int',
@@ -49,7 +61,7 @@ function oauth_common_schema() {
         'description' => t('Callback url.'),
         'type'        => 'varchar',
         'length'      => 255,
-        'not null'    => TRUE
+        'not null'    => TRUE,
       ),
     ),
     'primary key' => array('consumer_key'),
@@ -71,6 +83,18 @@ function oauth_common_schema() {
         'type'        => 'varchar',
         'length'      => 32,
         'not null'    => TRUE,
+      ),
+      'created' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The time that the token was created, as a Unix timestamp.',
+      ),
+      'changed' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The last time the token was edited, as a Unix timestamp.',
       ),
       'type' => array(
         'description' => t('Token type: request or access.'),

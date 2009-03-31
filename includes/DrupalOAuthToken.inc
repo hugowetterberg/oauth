@@ -4,6 +4,8 @@
 class DrupalOAuthToken extends OAuthToken {
   public $type = '';
   public $uid = 0;
+  public $created = 0;
+  public $changed = 0;
   public $consumer_key = '';
   public $services = array();
   public $authorized = 0;
@@ -26,9 +28,21 @@ class DrupalOAuthToken extends OAuthToken {
    */
   public function write($update=FALSE) {
     $primary = $update ? array('token_key') : array();
+
+    if (!$update) {
+      $this->created = time();
+    }
+    $this->changed = time();
+
     $values = get_object_vars($this);
     $values['token_key'] = $this->key;
     $values['services'] = json_encode($values['services']);
+
+    // Stop the created time from being modified
+    if ($update) {
+      unset($values['created']);
+    }
+
     drupal_write_record('oauth_common_token', $values, $primary);
   }
 
