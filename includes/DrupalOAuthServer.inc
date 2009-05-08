@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: DrupalOAuthServer.inc,v 1.1 2009/05/08 21:06:15 hugowetterberg Exp $
 
 class DrupalOAuthServer extends OAuthServer {
   function __construct() {

@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: DrupalOAuthRequest.inc,v 1.1 2009/05/08 21:06:15 hugowetterberg Exp $
 
 class DrupalOAuthRequest extends OAuthRequest {
   public static function from_request($http_method=NULL, $http_url=NULL, $parameters=NULL) {

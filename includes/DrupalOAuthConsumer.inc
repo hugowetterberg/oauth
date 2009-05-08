@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: DrupalOAuthConsumer.inc,v 1.1 2009/05/08 21:06:15 hugowetterberg Exp $
 
 class DrupalOAuthConsumer extends OAuthConsumer {
   public $uid = 0;

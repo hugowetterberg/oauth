@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: oauth_common.install,v 1.1 2009/05/08 21:06:15 hugowetterberg Exp $
 
 function oauth_common_install() {
   drupal_install_schema('oauth_common');
