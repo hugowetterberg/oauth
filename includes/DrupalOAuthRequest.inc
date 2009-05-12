@@ -2,6 +2,15 @@
 // $Id: DrupalOAuthRequest.inc,v 1.1 2009/05/08 21:06:15 hugowetterberg Exp $
 
 class DrupalOAuthRequest extends OAuthRequest {
+  /**
+   * Creates a OAuthRequest object from the current request
+   *
+   * @param string $http_method
+   * @param string $http_url
+   * @param array $parameters
+   * @return OAuthRequest
+   *  A OAuthRequest generated from the request
+   */
   public static function from_request($http_method=NULL, $http_url=NULL, $parameters=NULL) {
     // Preparations that has to be made if we're going to detect parameters
     if ($parameters==NULL) {

@@ -48,9 +48,12 @@ function oauth_common_user_access_tokens($uid) {
  */
 function oauth_common_verify_request() {
   $req = DrupalOAuthRequest::from_request();
+
   // Verify
   $consumer = $req->get_parameter('oauth_consumer_key');
   if (!empty($consumer)) {
+    _oauth_common_verify_body_hash($req);
+
     // Only verify request if we got a signature
     $signature = $req->get_parameter('oauth_signature');
     if (!empty($signature)) {
@@ -66,4 +69,15 @@ function oauth_common_verify_request() {
     }
   }
   return array(FALSE, NULL,NULL);
+}
+
+function _oauth_common_verify_body_hash($req) {
+  $body_hash = $req->get_parameter('oauth_body_hash');
+  if ($body_hash) {
+    $content = file_get_contents('drupal://input');
+    $sha1 = sha1($content, TRUE);
+    if ($sha1 !== base64_decode($body_hash)) {
+      throw new OAuthException("Invalid body hash");
+    }
+  }
 }

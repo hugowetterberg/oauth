@@ -2,4 +2,5 @@
 name = OAuth Common
 description = Provides common OAuth functionality
 dependencies[] = autoload
+dependencies[] = inputstream
 core = 6.x
