@@ -74,8 +74,11 @@ function oauth_common_verify_request() {
 function _oauth_common_verify_body_hash($req) {
   $body_hash = $req->get_parameter('oauth_body_hash');
   if ($body_hash) {
-    $content = file_get_contents('drupal://input');
-    $sha1 = sha1($content, TRUE);
+    $hres = hash_init('sha1');
+    $stream = fopen('drupal://input', 'r');
+    hash_update_stream($hres, $stream);
+    fclose($stream);
+    $sha1 = hash_final($hres, TRUE);
     if ($sha1 !== base64_decode($body_hash)) {
       throw new OAuthException("Invalid body hash");
     }
