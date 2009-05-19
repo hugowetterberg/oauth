@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: OAuthSignatureMethod_HMAC.inc,v 1.1 2009/05/19 19:38:20 hugowetterberg Exp $
 
 class OAuthSignatureMethod_HMAC extends OAuthSignatureMethod {
   private $algo;
