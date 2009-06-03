@@ -22,8 +22,87 @@ function oauth_common_autoload_info() {
   );
 }
 
+/**
+ * Implementation of hook_perm().
+ */
+function oauth_common_perm() {
+  return array('oauth authorize consumers', 'oauth register consumers');
+}
+
 function oauth_common_menu() {
   $menu = array();
+
+    $menu['oauth/authorize'] = array(
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('_oauth_common_authorize'),
+      'access callback' => '_oauth_common_always_true',
+      'file' => 'oauth_common.pages.inc',
+      'type' => MENU_CALLBACK,
+    );
+
+    $menu['oauth/authorized'] = array(
+      'title' => 'Authorization finished',
+      'page callback' => '_oauth_common_authorized',
+      'access callback' => '_oauth_common_always_true',
+      'file' => 'oauth_common.pages.inc',
+      'type' => MENU_CALLBACK,
+    );
+
+    $menu['oauth/request_token'] = array(
+      'page callback' => '_oauth_common_request_token',
+      'access callback' => '_oauth_common_always_true',
+      'file' => 'oauth_common.pages.inc',
+      'type' => MENU_CALLBACK,
+    );
+
+    $menu['oauth/access_token'] = array(
+      'page callback' => '_oauth_common_access_token',
+      'access callback' => '_oauth_common_always_true',
+      'file' => 'oauth_common.pages.inc',
+      'type' => MENU_CALLBACK,
+    );
+
+    $menu['user/%user/applications'] = array(
+      'title' => 'Applications',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('_oauth_common_user_applications', 1),
+      'access callback' => '_oauth_common_user_access',
+      'access arguments' => array(1, 'oauth register consumers'),
+      'file' => 'oauth_common.pages.inc',
+      'type' => MENU_LOCAL_TASK,
+    );
+
+    $menu['user/%user/applications/add'] = array(
+      'title' => 'Add application',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('_oauth_common_user_applications_add', 1),
+      'access callback' => '_oauth_common_user_access',
+      'access arguments' => array(1, 'oauth register consumers'),
+      'file' => 'oauth_common.pages.inc',
+      'type' => MENU_CALLBACK,
+    );
+
+    $menu['user/%user/applications/authorization/%'] = array(
+      'title' => 'Edit authorization',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('_oauth_common_user_authorization_edit', 1, 4),
+      'access callback' => '_oauth_common_user_access',
+      'access arguments' => array(1, 'oauth authorize consumers'),
+      'file' => 'oauth_common.pages.inc',
+      'type' => MENU_CALLBACK,
+    );
+
+    $menu['user/%user/applications/authorization/%/delete'] = array(
+      'title' => 'Delete authorization',
+      'page callback' => 'drupal_get_form',
+      'page arguments' => array('_oauth_common_user_authorization_delete', 1, 4),
+      // We always want to allow the user to delete a authorization, that 
+      // shouldn't be a permission that can be rescinded.
+      'access callback' => 'user_edit_access',
+      'access arguments' => array(1),
+      'file' => 'oauth_common.pages.inc',
+      'type' => MENU_CALLBACK,
+    );
 
   $menu['oauth/test/valid-consumer'] = array(
     'file' => 'oauth_common.pages.inc',
@@ -53,7 +132,7 @@ function oauth_common_user($op, &$edit, &$account, $category = NULL) {
   if ($op == 'delete') {
     // Delete all tokens and consumers related to a user
     module_load_include('inc', 'oauth_common');
-    $consumers = _services_oauth_user_consumer_info($account->uid);
+    $consumers = _oauth_common_user_consumer_info($account->uid);
     db_query('DELETE FROM {oauth_common_consumer}
       WHERE uid = %d', array(
         ':uid' => $account->uid,
@@ -66,3 +145,18 @@ function oauth_common_user($op, &$edit, &$account, $category = NULL) {
   }
 }
 
+function _oauth_common_user_access($user, $permission) {
+  return user_edit_access($user) && user_access($permission);
+}
+
+/**
+ * This function is used as a access callback
+ * when the authentication of the request shouldn't be
+ * done by the menu system.
+ *
+ * @return bool
+ *  Always returns TRUE
+ */
+function _oauth_common_always_true() {
+  return TRUE;
+}
