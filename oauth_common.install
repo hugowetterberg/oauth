@@ -202,12 +202,12 @@ function oauth_common_schema() {
  */
 function oauth_common_update_6001() {
   module_load_include('6001.inc', 'oauth_common', 'updates/update');
-  $res = array();
+  $ret = array();
   if (db_table_exists('services_oauth_authorization_levels')) {
-    $res[] = update_sql("ALTER TABLE {services_oauth_authorization_levels} RENAME TO {oauth_authorization_levels}");
+    $ret[] = update_sql("ALTER TABLE {services_oauth_authorization_levels} RENAME TO {oauth_authorization_levels}");
   }
   else {
-    db_create_table(&$ret, 'oauth_authorization_levels', _oauth_common_oauth_authorization_levels_6001());
+    db_create_table($ret, 'oauth_authorization_levels', _oauth_common_oauth_authorization_levels_6001());
   }
   return $ret;
 }
