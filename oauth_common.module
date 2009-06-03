@@ -41,6 +41,9 @@ function oauth_common_menu() {
  * Implementation of hook_user().
  */
 function oauth_common_user($op, &$edit, &$account, $category = NULL) {
+  // We have to make sure that we get the Hooks-class as the update-process
+  // will run into problems otherwise.
+  require_once('includes/OAuthCommonHooks.inc');
   return OAuthCommonHooks::user($op, $edit, $account, $category);
 }
 
