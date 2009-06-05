@@ -3,6 +3,17 @@
 
 function oauth_common_install() {
   drupal_install_schema('oauth_common');
+
+  // Create default authorization levels
+  $insert = "INSERT INTO {oauth_authorization_levels}(name, title) VALUES('%s','%s')";
+  db_query($insert, array(':name' => 'read',    ':title' => 'Read access',
+    ':description' => 'This will allow !appname to fetch content that you have access to on !sitename.'));
+  db_query($insert, array(':name' => 'update',  ':title' => 'Update access',
+    ':description' => 'This will allow !appname to update content that you have permissions to edit.'));
+  db_query($insert, array(':name' => 'create',  ':title' => 'Create access',
+    ':description' => 'This will allow !appname to create new content on !sitename.'));
+  db_query($insert, array(':name' => 'delete',  ':title' => 'Delete access',
+    ':description' => 'This will allow !appname to delete content from !sitename.'));
 }
 
 function oauth_common_uninstall() {
