@@ -5,7 +5,7 @@ function oauth_common_install() {
   drupal_install_schema('oauth_common');
 
   // Create default authorization levels
-  $insert = "INSERT INTO {oauth_authorization_levels}(name, title) VALUES('%s','%s')";
+  $insert = "INSERT INTO {oauth_authorization_levels}(name, title, description) VALUES('%s','%s', '%s')";
   db_query($insert, array(':name' => 'read',    ':title' => 'Read access',
     ':description' => 'This will allow !appname to fetch content that you have access to on !sitename.'));
   db_query($insert, array(':name' => 'update',  ':title' => 'Update access',
