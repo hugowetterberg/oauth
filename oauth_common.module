@@ -15,6 +15,7 @@ function oauth_common_autoload_info() {
     'DrupalOAuthConsumer'       => array('file' => 'includes/DrupalOAuthConsumer.inc'),
     'OAuthSignatureMethod_HMAC' => array('file' => 'includes/OAuthSignatureMethod_HMAC.inc'),
     'OAuthCommonHooks'          => array('file' => 'includes/OAuthCommonHooks.inc'),
+    'DrupalOAuthClient'         => array('file' => 'includes/DrupalOAuthClient.inc'),
     'OAuthServer'     => $lib,
     'OAuthDataStore'  => $lib,
     'OAuthRequest'    => $lib,
