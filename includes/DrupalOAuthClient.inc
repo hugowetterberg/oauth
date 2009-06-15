@@ -28,7 +28,7 @@ class DrupalOAuthClient {
 
   public function getRequestToken() {
     if (!$this->requestToken) {
-      $response = $this->get('/oauth/requestToken');
+      $response = $this->get('/oauth/request_token');
       $params = array();
       parse_str($response, $params);
 
@@ -49,12 +49,12 @@ class DrupalOAuthClient {
     if ($callback_url) {
       $params['oauth_callback'] = $callback_url;
     }
-    return $this->server . '/oauth/authorize?' . http_build_query($params);
+    return $this->server . '/oauth/authorize?' . http_build_query($params, NULL, '&');
   }
 
   public function getAccessToken() {
     if (!$this->accessToken) {
-      $response = $this->get('/oauth/accessToken', TRUE);
+      $response = $this->get('/oauth/access_token', TRUE);
       $params = array();
       parse_str($response, $params);
 
@@ -89,7 +89,7 @@ class DrupalOAuthClient {
 
     $result = $this->interpretResponse($response);
     if ($result->responseCode != 200) {
-      throw new Exception('Failed to fetch data from url (HTTP response code ' . $result->responseCode . '): ' . $result->responseMessage);
+      throw new Exception('Failed to fetch data from url (HTTP response code ' . $result->responseCode . '): ' . $result->responseMessage, $result->responseCode);
     }
 
     return $result->body;
