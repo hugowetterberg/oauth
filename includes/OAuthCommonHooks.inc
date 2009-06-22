@@ -7,6 +7,14 @@
  */
 class OAuthCommonHooks {
 
+  public static function cron() {
+    db_query("DELETE FROM {oauth_common_token}
+      WHERE expires!=0
+      AND expires <= %d", array(
+        ':now' => time(),
+    ));
+  }
+
   /**
    * Implementation of hook_user().
    */
@@ -103,7 +111,7 @@ class OAuthCommonHooks {
       'page callback' => 'drupal_get_form',
       'page arguments' => array('_oauth_common_user_applications', 1),
       'access callback' => '_oauth_common_user_access',
-      'access arguments' => array(1, 'oauth register consumers'),
+      'access arguments' => array(1, 'oauth authorize consumers'),
       'file' => 'oauth_common.pages.inc',
       'type' => MENU_LOCAL_TASK,
     );

@@ -235,20 +235,26 @@ function _oauth_common_request_token() {
     print $server->fetch_request_token($req);
   }
   catch (OAuthException $e) {
-    var_dump($e); die;
     drupal_set_header('HTTP/1.0 401 Unauthorized: ' . $e->getMessage());
     drupal_set_header(sprintf('WWW-Authenticate: OAuth realm="%s"', url('', array('absolute'=>TRUE))));
   }
 }
 
 /**
- * Access the OAuth services
+ * Get a access token for the request
  */
 function _oauth_common_access_token() {
   try {
     $server = new DrupalOAuthServer();
     $req = DrupalOAuthRequest::from_request();
-    print $server->fetch_access_token($req);
+    $access_token = $server->fetch_access_token($req);
+
+    // Store the expiry time if specified by the client
+    if ($_GET['expires'] && intval($_GET['expires'])) {
+      $access_token->expires = intval($_GET['expires']);
+      $access_token->write(TRUE);
+    }
+    print $access_token;
   }
   catch (OAuthException $e) {
     drupal_set_header('HTTP/1.0 401 Unauthorized: ' . $e->getMessage());

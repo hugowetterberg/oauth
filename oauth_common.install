@@ -109,6 +109,12 @@ function oauth_common_schema() {
         'default' => 0,
         'description' => 'The last time the token was edited, as a Unix timestamp.',
       ),
+      'expires' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The expiry time for the token, as a Unix timestamp.',
+      ),
       'type' => array(
         'description' => t('Token type: request or access.'),
         'type'        => 'varchar',
@@ -220,6 +226,24 @@ function oauth_common_update_6001() {
   else {
     db_create_table($ret, 'oauth_authorization_levels', _oauth_common_oauth_authorization_levels_6001());
   }
+  return $ret;
+}
+
+/**
+ * This update adds a expiry time column to the tokens table.
+ */
+function oauth_common_update_6002() {
+  $ret = array();
+
+  db_add_field($ret, 'oauth_common_token', 'expires', array(
+    'type' => 'int',
+    'not null' => TRUE,
+    'default' => 0,
+    'description' => 'The expiry time for the token, as a Unix timestamp.',
+  ));
+  db_add_index($ret, 'oauth_common_token', 'expires', array('expires'));
+  $ret[] = update_sql("UPDATE {oauth_common_token} SET expires=created+7200 WHERE type='request'");
+
   return $ret;
 }
 

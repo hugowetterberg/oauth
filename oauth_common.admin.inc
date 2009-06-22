@@ -10,8 +10,25 @@ function _oauth_common_admin() {
     '#default_value' => variable_get('oauth_common_enable_provider', TRUE),
     '#description' => t('This option controls whether this site should act as a OAuth provider or not'),
   );
-  
+
+  $form['oauth_common_request_token_lifetime'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Request token lifetime (in seconds)'),
+    '#default_value' => variable_get('oauth_common_request_token_lifetime', 7200),
+  );
+
+  $form['#validate'][] = '_oauth_common_admin_settings_validate';
+
   return system_settings_form($form);
+}
+
+function _oauth_common_admin_settings_validate($form, $form_state) {
+  $values = $form_state['values'];
+
+  $lifetime = intval($values['oauth_common_request_token_lifetime'], 10);
+  if (!$lifetime) {
+    form_set_error('oauth_common_request_token_lifetime', t('The request token lifetime must be a non-zero integer value.'));
+  }
 }
 
 /**
