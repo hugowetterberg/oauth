@@ -1,5 +1,5 @@
 <?php
-// $Id: oauth_common.pages.inc,v 1.1 2009/05/08 21:06:15 hugowetterberg Exp $
+// $Id: oauth_common.pages.inc,v 1.2 2009/06/23 06:55:59 hugowetterberg Exp $
 
 function _oauth_common_validate_request_callback($type, $unsigned=NULL) {
   try {

@@ -1,5 +1,5 @@
 <?php
-// $Id: OAuthSignatureMethod_HMAC.inc,v 1.1 2009/05/19 19:38:20 hugowetterberg Exp $
+// $Id: OAuthSignatureMethod_HMAC.inc,v 1.2 2009/06/23 06:55:59 hugowetterberg Exp $
 
 /**
  * A generic signature method implementation that leverages hash_hmac() for

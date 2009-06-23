@@ -1,5 +1,5 @@
 <?php
-// $Id: DrupalOAuthToken.inc,v 1.1 2009/05/08 21:06:15 hugowetterberg Exp $
+// $Id: DrupalOAuthToken.inc,v 1.2 2009/06/23 06:55:59 hugowetterberg Exp $
 
 class DrupalOAuthToken extends OAuthToken {
   public $type = '';
