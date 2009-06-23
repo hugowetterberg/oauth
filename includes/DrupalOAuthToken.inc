@@ -9,6 +9,7 @@ class DrupalOAuthToken extends OAuthToken {
   public $consumer_key = '';
   public $services = array();
   public $authorized = 0;
+  public $expires = 0;
   
   public function __construct($key, $secret, $params=array()) {
     parent::__construct($key, $secret);

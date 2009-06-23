@@ -3,6 +3,17 @@
 
 function oauth_common_install() {
   drupal_install_schema('oauth_common');
+
+  // Create default authorization levels
+  $insert = "INSERT INTO {oauth_authorization_levels}(name, title, description) VALUES('%s','%s', '%s')";
+  db_query($insert, array(':name' => 'read',    ':title' => 'Read access',
+    ':description' => 'This will allow !appname to fetch content that you have access to on !sitename.'));
+  db_query($insert, array(':name' => 'update',  ':title' => 'Update access',
+    ':description' => 'This will allow !appname to update content that you have permissions to edit.'));
+  db_query($insert, array(':name' => 'create',  ':title' => 'Create access',
+    ':description' => 'This will allow !appname to create new content on !sitename.'));
+  db_query($insert, array(':name' => 'delete',  ':title' => 'Delete access',
+    ':description' => 'This will allow !appname to delete content from !sitename.'));
 }
 
 function oauth_common_uninstall() {
@@ -10,8 +21,10 @@ function oauth_common_uninstall() {
 }
 
 function oauth_common_schema() {
+  module_load_include('6001.inc', 'oauth_common', 'updates/update');
   $schema = array();
 
+  $schema['oauth_authorization_levels'] = _oauth_common_oauth_authorization_levels_6001();
   $schema['oauth_common_consumer'] = array(
     'description' => t('Information that allows external applications to access services.'),
     'fields' => array(
@@ -19,13 +32,13 @@ function oauth_common_schema() {
         'description' => t('Consumer key.'),
         'type'        => 'varchar',
         'length'      => 32,
-        'not null'    => TRUE
+        'not null'    => TRUE,
       ),
       'secret' => array(
         'description' => t('Consumer secret.'),
         'type'        => 'varchar',
         'length'      => 32,
-        'not null'    => TRUE
+        'not null'    => TRUE,
       ),
       'created' => array(
         'type' => 'int',
@@ -43,13 +56,13 @@ function oauth_common_schema() {
         'description' => t('The application owner.'),
         'type'        => 'int',
         'unsigned'    => TRUE,
-        'not null'    => TRUE
+        'not null'    => TRUE,
       ),
       'name' => array(
         'description' => t('The application name.'),
         'type'        => 'varchar',
         'length'      => 128,
-        'not null'    => TRUE
+        'not null'    => TRUE,
       ),
       'type' => array(
         'description' => t('The application type.'),
@@ -95,6 +108,12 @@ function oauth_common_schema() {
         'not null' => TRUE,
         'default' => 0,
         'description' => 'The last time the token was edited, as a Unix timestamp.',
+      ),
+      'expires' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The expiry time for the token, as a Unix timestamp.',
       ),
       'type' => array(
         'description' => t('Token type: request or access.'),
@@ -193,3 +212,38 @@ function oauth_common_schema() {
   );
   return $schema;
 }
+
+/**
+ * This update either creates a authorization levels table, or transfers the
+ * authorization levels table from the services_oauth module.
+ */
+function oauth_common_update_6001() {
+  module_load_include('6001.inc', 'oauth_common', 'updates/update');
+  $ret = array();
+  if (db_table_exists('services_oauth_authorization_levels')) {
+    $ret[] = update_sql("ALTER TABLE {services_oauth_authorization_levels} RENAME TO {oauth_authorization_levels}");
+  }
+  else {
+    db_create_table($ret, 'oauth_authorization_levels', _oauth_common_oauth_authorization_levels_6001());
+  }
+  return $ret;
+}
+
+/**
+ * This update adds a expiry time column to the tokens table.
+ */
+function oauth_common_update_6002() {
+  $ret = array();
+
+  db_add_field($ret, 'oauth_common_token', 'expires', array(
+    'type' => 'int',
+    'not null' => TRUE,
+    'default' => 0,
+    'description' => 'The expiry time for the token, as a Unix timestamp.',
+  ));
+  db_add_index($ret, 'oauth_common_token', 'expires', array('expires'));
+  $ret[] = update_sql("UPDATE {oauth_common_token} SET expires=created+7200 WHERE type='request'");
+
+  return $ret;
+}
+

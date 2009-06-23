@@ -1,13 +1,50 @@
 <?php
 // $Id: OAuthSignatureMethod_HMAC.inc,v 1.1 2009/05/19 19:38:20 hugowetterberg Exp $
 
+/**
+ * A generic signature method implementation that leverages hash_hmac() for
+ * increased flexibility.
+ */
 class OAuthSignatureMethod_HMAC extends OAuthSignatureMethod {
-  private $algo;
-  
+  private $algo = NULL;
+
+  /**
+   * Create a HMAC oauth signature method object using the (or one of the)
+   * specified algorithm implementations.
+   *
+   * @param mixed $algo
+   *  Pass the name of a algorithm supported by hash_hmac() or an array of
+   *  names when you have several candidate algorithms that may be used. The
+   *  first algorithm int the array that is supported on the system will be used.
+   * @throws Exception
+   *  A exception is thrown when none of the provided algorithms are supported
+   *  by the system.
+   */
   public function __construct($algo) {
-    $this->algo = $algo;
+    $algos = hash_algos();
+    // Create a single-element array from strings to simplify the logic of
+    // support checking and failure handling.
+    if (is_string($algo)) {
+      $algo = array($algo);
+    }
+
+    // Find a supported algorithm among the candidates
+    foreach ($algo as $a) {
+      if (in_array($a, $algos)) {
+        $this->algo = $a;
+        continue;
+      }
+    }
+    // Throw a exception if no matching algorithm can be found
+    if (empty($this->algo)) {
+      throw new Exception(t('None of the suggested hash algorithms (@cand) were '
+        . 'supported by the server. Try one of the following: !algos.', array(
+          '@cand' => join($algo, ', '),
+          '!algos' => join($algos, ', '),
+      )));
+    }
   }
-  
+
   function get_name() {
     return "HMAC-" . strtoupper($this->algo);
   }
