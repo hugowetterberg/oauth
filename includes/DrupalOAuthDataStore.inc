@@ -10,14 +10,16 @@ class DrupalOAuthDataStore extends OAuthDataStore {
    *
    * @param string $consumer_key
    *   The consumer key.
+   * @param bool $provider_consumer
+   *  Whether the consumer should be a provider consumer
    * @return OAuthConsumer
    *  The consumer
    * @throws OAuthException
    *  An exception is thrown when the consumer cannot be found
    */
-  function lookup_consumer($consumer_key) {
+  function lookup_consumer($consumer_key, $provider_consumer=TRUE) {
     $consumer = DrupalOAuthConsumer::load($consumer_key);
-    if ($consumer) {
+    if ($consumer && $consumer->provider_consumer==$provider_consumer) {
       return $consumer;
     }
     throw new OAuthException('Consumer not found');
@@ -32,15 +34,19 @@ class DrupalOAuthDataStore extends OAuthDataStore {
    *  The type of the token: 'request' or 'access'.
    * @param string $token
    *  The token key.
+   * @param bool $provider_token
+   *  Whether the token should be a provider token
    * @return DrupalOauthToken
    *  The matching token
    * @throws OAuthException
    *  An exception is thrown when the token cannot be found or doesn't match
    */
-  function lookup_token($consumer, $token_type, $token) {
+  function lookup_token($consumer, $token_type, $token, $provider_token=TRUE) {
     $token = DrupalOAuthToken::load($token);
     if ($token) {
-      if ($token->type==$token_type && $token->consumer_key==$consumer->key) {
+      if ($token->type==$token_type
+          && $token->consumer_key==$consumer->key
+          && $token->provider_token==$provider_token) {
         return $token;
       }
       throw new OAuthException('No matching token was found, token type or consumer key mismatch');
