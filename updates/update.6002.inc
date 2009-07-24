@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: update.6002.inc,v 1.1 2009/07/24 14:14:01 hugowetterberg Exp $
 
 /**
  * This update adds a expiry time column to the tokens table.

@@ -1,5 +1,5 @@
 <?php
-// $Id: OAuthCommonHooks.inc,v 1.1 2009/06/23 06:55:59 hugowetterberg Exp $
+// $Id: OAuthCommonHooks.inc,v 1.2 2009/07/24 14:14:01 hugowetterberg Exp $
 
 /**
  * Class used to collect hook implementations that doesn't need to be included
