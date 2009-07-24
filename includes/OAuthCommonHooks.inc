@@ -24,7 +24,7 @@ class OAuthCommonHooks {
     if ($op == 'delete') {
       // Delete all tokens and consumers related to a user
       module_load_include('inc', 'oauth_common');
-      $consumers = _oauth_common_user_consumer_info($account->uid);
+      $consumers = oauth_common_user_consumers($account->uid);
       db_query('DELETE FROM {oauth_common_consumer}
         WHERE uid = %d', array(
           ':uid' => $account->uid,
