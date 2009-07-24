@@ -34,6 +34,14 @@ function oauth_common_schema() {
         'length'      => 32,
         'not null'    => TRUE,
       ),
+      'provider_consumer' => array(
+        'description' => t('Whether this is a provider consumer or a consumer consumer'),
+        'type' => 'int',
+        'size' => 'tiny',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 1,
+      ),
       'secret' => array(
         'description' => t('Consumer secret.'),
         'type'        => 'varchar',
@@ -83,13 +91,21 @@ function oauth_common_schema() {
     ),
   );
   $schema['oauth_common_token'] = array(
-    'description' => t('Tokens stored on behalf of providers for request and services accesses.'),
+    'description' => t('Tokens stored on behalf of providers or consumers for request and services accesses.'),
     'fields' => array(
       'token_key' => array(
         'description' => t('Token key.'),
         'type'        => 'varchar',
         'length'      => 32,
         'not null'    => TRUE,
+      ),
+      'provider_token' => array(
+        'description' => t('Whether this is a consumer or a provider token'),
+        'type' => 'int',
+        'size' => 'tiny',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 1,
       ),
       'secret' => array(
         'description' => t('Token secret.'),
@@ -219,31 +235,28 @@ function oauth_common_schema() {
  */
 function oauth_common_update_6001() {
   module_load_include('6001.inc', 'oauth_common', 'updates/update');
-  $ret = array();
-  if (db_table_exists('services_oauth_authorization_levels')) {
-    $ret[] = update_sql("ALTER TABLE {services_oauth_authorization_levels} RENAME TO {oauth_authorization_levels}");
-  }
-  else {
-    db_create_table($ret, 'oauth_authorization_levels', _oauth_common_oauth_authorization_levels_6001());
-  }
-  return $ret;
+  return _oauth_common_update_6001();
 }
 
 /**
  * This update adds a expiry time column to the tokens table.
  */
 function oauth_common_update_6002() {
-  $ret = array();
+  module_load_include('6002.inc', 'oauth_common', 'updates/update');
+  return _oauth_common_update_6002();
+}
 
-  db_add_field($ret, 'oauth_common_token', 'expires', array(
-    'type' => 'int',
-    'not null' => TRUE,
-    'default' => 0,
-    'description' => 'The expiry time for the token, as a Unix timestamp.',
-  ));
-  db_add_index($ret, 'oauth_common_token', 'expires', array('expires'));
-  $ret[] = update_sql("UPDATE {oauth_common_token} SET expires=created+7200 WHERE type='request'");
-
-  return $ret;
+/**
+ * This update makes it possible for consumers to store tokens in the common
+ * token table. It also adds the possibility to add consumer-consumers to the
+ * common consumer table.
+ *
+ * NB: There is a weakness in the current implementation that prevents a site
+ *     from acting as a consumer of itself. That would result in hitting a
+ *     unique constraint in the db as the token key is the primary key. /Hugo
+ */
+function oauth_common_update_6003() {
+  module_load_include('6003.inc', 'oauth_common', 'updates/update');
+  return _oauth_common_update_6003();
 }
 

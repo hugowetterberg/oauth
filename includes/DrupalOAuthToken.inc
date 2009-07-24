@@ -3,6 +3,7 @@
 
 class DrupalOAuthToken extends OAuthToken {
   public $type = '';
+  public $provider_token = TRUE;
   public $uid = 0;
   public $created = 0;
   public $changed = 0;

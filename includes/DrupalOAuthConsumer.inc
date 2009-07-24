@@ -3,6 +3,7 @@
 
 class DrupalOAuthConsumer extends OAuthConsumer {
   public $uid = 0;
+  public $provider_consumer = TRUE;
   public $name = '';
   public $created = 0;
   public $changed = 0;
