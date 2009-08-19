@@ -1,11 +1,5 @@
 <?php
 
-if (defined('MAINTENANCE_MODE')) {
-  // We have to make sure that we get the Hooks-class as the update-process
-  // will run into problems otherwise.
-  require_once('includes/OAuthCommonHooks.inc');
-}
-
 /**
  * Implementation hook_autoload_info().
  */
