@@ -31,6 +31,14 @@ function oauth_common_autoload_info() {
 }
 
 /**
+ * Implementation of hook_enable().
+ */
+function services_oauth_enable() {
+  // Flush the autoload caches so that our classes are registered
+  autoload_flush_caches();
+}
+
+/**
  * Implementation of hook_perm().
  */
 function oauth_common_perm() {
