@@ -2,6 +2,7 @@
 // $Id$
 
 class DrupalOAuthConsumer extends OAuthConsumer {
+  public $context = '';
   public $uid = 0;
   public $provider_consumer = TRUE;
   public $name = '';

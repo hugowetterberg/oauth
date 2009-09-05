@@ -21,10 +21,39 @@ function oauth_common_uninstall() {
 }
 
 function oauth_common_schema() {
-  module_load_include('6001.inc', 'oauth_common', 'updates/update');
   $schema = array();
 
-  $schema['oauth_authorization_levels'] = _oauth_common_oauth_authorization_levels_6001();
+  $schema['oauth_authorization_levels'] = array(
+    'description' => t('Stores the different authorization levels that are available for access tokens.'),
+    'fields' => array(
+      'name' => array(
+        'description' => t('The computer-readable name of the authorization level.'),
+        'type'        => 'varchar',
+        'length'      => 32,
+        'not null'    => TRUE,
+      ),
+      'context' => array(
+        'description' => t('The context that the authorization level is valid within.'),
+        'type'        => 'varchar',
+        'length'      => 64,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'title' => array(
+        'description' => t('The localizable title of the authorization level.'),
+        'type'        => 'varchar',
+        'length'      => 100,
+        'not null'    => TRUE,
+      ),
+      'description' => array(
+        'description' => t('The localizable description of the authorization level.'),
+        'type'        => 'varchar',
+        'length'      => 255,
+        'not null'    => TRUE,
+      ),
+    ),
+    'primary key' => array('name', 'context'),
+  );
   $schema['oauth_common_consumer'] = array(
     'description' => t('Information that allows external applications to access services.'),
     'fields' => array(
@@ -33,6 +62,13 @@ function oauth_common_schema() {
         'type'        => 'varchar',
         'length'      => 32,
         'not null'    => TRUE,
+      ),
+      'context' => array(
+        'description' => t('The context that the consumer is valid within.'),
+        'type'        => 'varchar',
+        'length'      => 64,
+        'not null'    => TRUE,
+        'default'     => '',
       ),
       'provider_consumer' => array(
         'description' => t('Whether this is a provider consumer or a consumer consumer'),

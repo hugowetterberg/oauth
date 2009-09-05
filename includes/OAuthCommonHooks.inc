@@ -58,31 +58,34 @@ class OAuthCommonHooks {
       'weight' => -10,
     ));
 
-    $menu['admin/settings/oauth/authorizations'] = array(
+    $menu['admin/settings/oauth/%/authorizations'] = array(
       'title' => 'Authorization levels',
       'page callback' => 'drupal_get_form',
-      'page arguments' => array('_oauth_common_admin_authorization'),
+      'page arguments' => array('_oauth_common_admin_authorization', 3),
       'access arguments' => array('administer oauth'),
       'file' => 'oauth_common.admin.inc',
       'type' => MENU_LOCAL_TASK,
     );
 
-    $menu['admin/settings/oauth/authorization/%/delete'] = array(
+    $menu['admin/settings/oauth/%/authorization/%/delete'] = array(
       'title' => 'Delete authorization level',
       'page callback' => 'drupal_get_form',
-      'page arguments' => array('_oauth_common_admin_authorization_delete', 4),
+      'page arguments' => array('_oauth_common_admin_authorization_delete', 3, 5),
       'access arguments' => array('administer oauth'),
       'file' => 'oauth_common.admin.inc',
       'type' => MENU_CALLBACK,
     );
 
-    $menu['oauth/authorize'] = array(
+    $menu['oauth/%/authorize'] = array(
       'page callback' => 'drupal_get_form',
-      'page arguments' => array('_oauth_common_authorize'),
+      'page arguments' => array('_oauth_common_authorize', 1),
       'access callback' => '_oauth_common_always_true',
       'file' => 'oauth_common.pages.inc',
       'type' => MENU_CALLBACK,
     );
+
+    $menu['oauth/authorize'] = $menu['oauth/%/authorize'];
+    $menu['oauth/authorize']['page arguments'] = array('');
 
     $menu['oauth/authorized'] = array(
       'title' => 'Authorization finished',
@@ -92,19 +95,27 @@ class OAuthCommonHooks {
       'type' => MENU_CALLBACK,
     );
 
-    $menu['oauth/request_token'] = array(
+    $menu['oauth/%/request_token'] = array(
       'page callback' => '_oauth_common_request_token',
+      'page arguments' => array(1),
       'access callback' => '_oauth_common_always_true',
       'file' => 'oauth_common.pages.inc',
       'type' => MENU_CALLBACK,
     );
 
-    $menu['oauth/access_token'] = array(
+    $menu['oauth/request_token'] = $menu['oauth/%/request_token'];
+    $menu['oauth/request_token']['page arguments'] = array('');
+
+    $menu['oauth/%/access_token'] = array(
       'page callback' => '_oauth_common_access_token',
+      'page arguments' => array(1),
       'access callback' => '_oauth_common_always_true',
       'file' => 'oauth_common.pages.inc',
       'type' => MENU_CALLBACK,
     );
+
+    $menu['oauth/access_token'] = $menu['oauth/%/access_token'];
+    $menu['oauth/access_token']['page arguments'] = array('');
 
     $menu['user/%user/applications'] = array(
       'title' => 'Applications',
@@ -148,18 +159,18 @@ class OAuthCommonHooks {
       'type' => MENU_CALLBACK,
     );
 
-    $menu['oauth/test/valid-consumer'] = array(
+    $menu['oauth/%/test/valid-consumer'] = array(
       'file' => 'oauth_common.pages.inc',
       'page callback' => '_oauth_common_validate_request_callback',
-      'page arguments' => array('consumer'),
+      'page arguments' => array('consumer', 1),
       'access arguments' => array('access content'),
       'type' => MENU_CALLBACK,
     );
 
-    $menu['oauth/test/valid-access-token'] = array(
+    $menu['oauth/%/test/valid-access-token'] = array(
       'file' => 'oauth_common.pages.inc',
       'page callback' => '_oauth_common_validate_request_callback',
-      'page arguments' => array('access token'),
+      'page arguments' => array('access token', 1),
       'access arguments' => array('access content'),
       'type' => MENU_CALLBACK,
     );

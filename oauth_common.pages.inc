@@ -1,11 +1,11 @@
 <?php
 // $Id$
 
-function _oauth_common_validate_request_callback($type, $unsigned=NULL) {
+function _oauth_common_validate_request_callback($type, $unsigned=NULL, $context='') {
   try {
     module_load_include('inc', 'oauth_common');
 
-    list($signed, $consumer, $token) = oauth_common_verify_request();
+    list($signed, $consumer, $token) = oauth_common_verify_request($context);
 
     if ($consumer==NULL) {
       throw new OAuthException('Missing consumer token');
@@ -21,7 +21,7 @@ function _oauth_common_validate_request_callback($type, $unsigned=NULL) {
   }
   catch (OAuthException $e) {
     drupal_set_header('HTTP/1.0 401 Unauthorized: ' . $e->getMessage());
-    drupal_set_header(sprintf('WWW-Authenticate: OAuth realm="%s"', url('', array('absolute'=>TRUE))));
+    drupal_set_header(sprintf('WWW-Authenticate: OAuth realm="%s"', url('oauth/' . $context, array('absolute'=>TRUE))));
   }
   exit;
 }
@@ -33,7 +33,7 @@ function _oauth_common_authorized() {
 /**
  * Form for granting access to the consumer
  */
-function _oauth_common_authorize() {
+function _oauth_common_authorize($context='') {
   module_load_include('inc', 'oauth_common');
   $req = DrupalOAuthRequest::from_request();
   $token = $req->get_parameter('oauth_token');
@@ -73,6 +73,11 @@ function _oauth_common_authorize() {
       '#value'  => serialize($req->get_parameters()),
     );
 
+    $form['context'] = array(
+      '#type' => 'value',
+      '#value' => $context,
+    );
+
     $msgargs = array(
       '!appname' => $consumer->name,
       '!sitename' => variable_get('site_name', ''),
@@ -102,7 +107,7 @@ function _oauth_common_authorize() {
       ),
     );
 
-    $auth_levels = oauth_common_authorization_levels();
+    $auth_levels = oauth_common_authorization_levels($context);
     $form['authorization']['levels'] = array(
       '#tree' => TRUE,
     );
@@ -133,8 +138,12 @@ function _oauth_common_authorize() {
   else {
     $query = $_GET;
     unset($query['q']); // why are there so few q's?
+    $auth_page = 'oauth/authorize';
+    if (!empty($context)) {
+      $auth_page = 'oauth/' . $context . '/authorize';
+    }
     drupal_goto('user/login', array(
-      'destination' => url('oauth/authorize', array(
+      'destination' => url($auth_page, array(
         'query' => $query,
         'absolute' => TRUE,
       )),
@@ -146,7 +155,7 @@ function _oauth_common_authorize_validate($form, &$form_state) {
   $values = $form_state['values'];
   $got_permission = FALSE;
 
-  $auth_levels = oauth_common_authorization_levels();
+  $auth_levels = oauth_common_authorization_levels($values['context']);
   foreach ($auth_levels as $name => $level) {
     if ($values['levels'][$name]) {
       $got_permission = TRUE;
@@ -179,7 +188,7 @@ function _oauth_common_authorize_submit(&$form, &$form_state) {
     $token->services[] = '*';
   }
   else {
-    $auth_levels = oauth_common_authorization_levels();
+    $auth_levels = oauth_common_authorization_levels($values['context']);
     foreach ($auth_levels as $name => $level) {
       if ($values['levels'][$name]) {
         $token->services[] = $name;
@@ -228,22 +237,22 @@ function _oauth_common_glue_url($parsed) {
 /**
  * Generate a request token from the request.
  */
-function _oauth_common_request_token() {
+function _oauth_common_request_token($context='') {
   try {
     $server = new DrupalOAuthServer();
     $req = DrupalOAuthRequest::from_request();
-    print $server->fetch_request_token($req);
+    print $server->fetch_request_token($req, $context);
   }
   catch (OAuthException $e) {
     drupal_set_header('HTTP/1.0 401 Unauthorized: ' . $e->getMessage());
-    drupal_set_header(sprintf('WWW-Authenticate: OAuth realm="%s"', url('', array('absolute'=>TRUE))));
+    drupal_set_header(sprintf('WWW-Authenticate: OAuth realm="%s"', url('oauth/' . $context, array('absolute'=>TRUE))));
   }
 }
 
 /**
  * Get a access token for the request
  */
-function _oauth_common_access_token() {
+function _oauth_common_access_token($context='') {
   try {
     $server = new DrupalOAuthServer();
     $req = DrupalOAuthRequest::from_request();
@@ -258,7 +267,7 @@ function _oauth_common_access_token() {
   }
   catch (OAuthException $e) {
     drupal_set_header('HTTP/1.0 401 Unauthorized: ' . $e->getMessage());
-    drupal_set_header(sprintf('WWW-Authenticate: OAuth realm="%s"', url('', array('absolute'=>TRUE))));
+    drupal_set_header(sprintf('WWW-Authenticate: OAuth realm="%s"', url('oauth/' . $context, array('absolute'=>TRUE))));
   }
 }
 

@@ -97,11 +97,13 @@ function _oauth_common_always_true() {
  *
  * @return array
  */
-function oauth_common_authorization_levels() {
+function oauth_common_authorization_levels($context='') {
   global $levels;
   if (!$levels) {
     $levels = array();
-    $res = db_query("SELECT * FROM {oauth_authorization_levels}");
+    $res = db_query("SELECT * FROM {oauth_authorization_levels} WHERE context='%s'", array(
+      ':context' => $context,
+    ));
     while ($level = db_fetch_object($res)) {
       $levels[$level->name] = $level;
     }
@@ -140,8 +142,9 @@ function oauth_common_write_authorization_level($name, $title, $description) {
  *  The machine-readable name of the authorization level
  * @return void
  */
-function oauth_common_delete_authorization_level($name) {
-  db_query("DELETE FROM {oauth_authorization_levels} WHERE name='%s'", array(
+function oauth_common_delete_authorization_level($name, $context='') {
+  db_query("DELETE FROM {oauth_authorization_levels} WHERE name='%s' AND context='%s'", array(
     ':name' => $name,
+    ':context' => $context,
   ));
 }

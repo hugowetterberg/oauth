@@ -46,26 +46,31 @@ function oauth_common_user_access_tokens($uid) {
  *  An array containing three elements. The first is TRUE if the request was
  *  signed, otherwise FALSE. Then comes the validated consumer and token objects.
  */
-function oauth_common_verify_request() {
+function oauth_common_verify_request($context='') {
   $req = DrupalOAuthRequest::from_request();
 
   // Verify
   $consumer = $req->get_parameter('oauth_consumer_key');
   if (!empty($consumer)) {
-    _oauth_common_verify_body_hash($req);
+    $consumer_object = DrupalOAuthConsumer::load($consumer);
 
-    // Only verify request if we got a signature
-    $signature = $req->get_parameter('oauth_signature');
-    if (!empty($signature)) {
-      $server = new DrupalOAuthServer();
-      return array_merge(array(TRUE), $server->verify_request($req));
-    }
-    else {
-      $token_key = $req->get_parameter('oauth_token');
-      if (empty($token_key) || !($token=DrupalOAuthToken::load($token_key))) {
-        $token = NULL;
+    // Check that we've gotten a consumer and that it matches our context
+    if ($consumer_object && $consumer->context == $context) {
+      _oauth_common_verify_body_hash($req);
+
+      // Only verify request if we got a signature
+      $signature = $req->get_parameter('oauth_signature');
+      if (!empty($signature)) {
+        $server = new DrupalOAuthServer();
+        return array_merge(array(TRUE), $server->verify_request($req));
       }
-      return array(FALSE, DrupalOAuthConsumer::load($consumer), $token);
+      else {
+        $token_key = $req->get_parameter('oauth_token');
+        if (empty($token_key) || !($token=DrupalOAuthToken::load($token_key))) {
+          $token = NULL;
+        }
+        return array(FALSE, $consumer_object, $token);
+      }
     }
   }
   return array(FALSE, NULL,NULL);
