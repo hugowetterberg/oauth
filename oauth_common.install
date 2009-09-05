@@ -23,7 +23,7 @@ function oauth_common_uninstall() {
 function oauth_common_schema() {
   $schema = array();
 
-  $schema['oauth_authorization_levels'] = array(
+  $schema['oauth_common_authorization_levels'] = array(
     'description' => t('Stores the different authorization levels that are available for access tokens.'),
     'fields' => array(
       'name' => array(
@@ -296,3 +296,10 @@ function oauth_common_update_6003() {
   return _oauth_common_update_6003();
 }
 
+/**
+ * This update adds context information to the oauth_authorization_levels and oauth_common_consumer tables.
+ */
+function oauth_common_update_6004() {
+  module_load_include('6004.inc', 'oauth_common', 'updates/update');
+  return _oauth_common_update_6004();
+}
