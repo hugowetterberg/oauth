@@ -59,13 +59,21 @@ function oauth_common_menu() {
     'weight' => -10,
   ));
 
+  $menu['admin/settings/oauth/contexts'] = array(
+    'title' => 'Authorization contexts',// Todo: functionality for creating contexts (outside services)?
+    'page callback' => '_oauth_common_admin_contexts',
+    'access arguments' => array('administer oauth'),
+    'file' => 'oauth_common.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+
   $menu['admin/settings/oauth/%/authorizations'] = array(
-    'title' => 'Authorization levels',
+    'title' => 'Authorization levels', // Todo: title callback
     'page callback' => 'drupal_get_form',
     'page arguments' => array('_oauth_common_admin_authorization', 3),
     'access arguments' => array('administer oauth'),
     'file' => 'oauth_common.admin.inc',
-    'type' => MENU_LOCAL_TASK,
+    'type' => MENU_CALLBACK,
   );
 
   $menu['admin/settings/oauth/%/authorization/%/delete'] = array(

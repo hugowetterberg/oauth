@@ -31,14 +31,22 @@ function _oauth_common_admin_settings_validate($form, $form_state) {
   }
 }
 
+function _oauth_common_admin_contexts() {
+  $contexts = array(
+    '' => t('Default context'),
+  );
+  drupal_alter('oauth_common_context', $contexts);
+  
+}
+
 /**
  * Menu system callback that generates a form for
- * administrating the authorization levels.
+ * administrating the authorization levels in a context.
  *
  * @return array
  *  A form array.
  */
-function _oauth_common_admin_authorization() {
+function _oauth_common_admin_authorization($form_state, $context) {
   $form = array();
 
   $levels = oauth_common_authorization_levels();
