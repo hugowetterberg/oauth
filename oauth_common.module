@@ -59,13 +59,22 @@ function oauth_common_menu() {
     'weight' => -10,
   ));
 
-  $menu['admin/settings/oauth/authorizations'] = array(
-    'title' => 'Authorization levels',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('_oauth_common_admin_authorization'),
+  $menu['admin/settings/oauth/contexts'] = array(
+    'title' => 'Contexts',
+    'description' => 'The different context for authorization',
+    'page callback' => '_oauth_common_admin_contexts',
     'access arguments' => array('administer oauth'),
     'file' => 'oauth_common.admin.inc',
     'type' => MENU_LOCAL_TASK,
+  );
+
+  $menu['admin/settings/oauth/%/authorizations'] = array(
+    'title' => 'Authorization levels',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_oauth_common_admin_authorization', 3),
+    'access arguments' => array('administer oauth'),
+    'file' => 'oauth_common.admin.inc',
+    'type' => MENU_CALLBACK,
   );
 
   $menu['admin/settings/oauth/authorization/%/delete'] = array(
@@ -76,6 +85,10 @@ function oauth_common_menu() {
     'file' => 'oauth_common.admin.inc',
     'type' => MENU_CALLBACK,
   );
+
+  // OAuth doesn't need different endpoints for the different context as all
+  // actions are done with a specific consumer, which in itself is associated
+  // with a context.
 
   $menu['oauth/authorize'] = array(
     'page callback' => 'drupal_get_form',

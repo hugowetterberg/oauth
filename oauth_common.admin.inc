@@ -31,14 +31,22 @@ function _oauth_common_admin_settings_validate($form, $form_state) {
   }
 }
 
+function _oauth_common_admin_contexts() {
+  // TODO: Should the contexts be stored in the database?
+}
+
 /**
  * Menu system callback that generates a form for
  * administrating the authorization levels.
  *
+ * @param string $context THe context whose authorization levels should be administered.
+ * 
  * @return array
  *  A form array.
  */
-function _oauth_common_admin_authorization() {
+function _oauth_common_admin_authorization($context) {
+  // TODO: Take context into account.
+  // TODO: Default context?
   $form = array();
 
   $levels = oauth_common_authorization_levels();
