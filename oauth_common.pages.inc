@@ -73,6 +73,11 @@ function _oauth_common_authorize() {
       '#value'  => serialize($req->get_parameters()),
     );
 
+    $form['oauth_consumer'] => array(
+      '#type'   => 'value',
+      '#value'  => $consumer->key,
+    );
+
     $msgargs = array(
       '!appname' => $consumer->name,
       '!sitename' => variable_get('site_name', ''),
@@ -95,14 +100,14 @@ function _oauth_common_authorize() {
       '#type' => 'fieldset',
       '#title' => t('Permissions'),
       '#options' => $auth_levels,
-      'full_access' => array(
+      'full_access' => array( // TODO: Full access should be a configurable auth level
         '#type' => 'checkbox',
         '#title' => t('Full access'),
         '#description' => t('This will give !appname the same permissions that you normally have and will allow it to access the full range of services that !sitename provides.', $msgargs),
       ),
     );
 
-    $auth_levels = oauth_common_authorization_levels();
+    $auth_levels = oauth_common_authorization_levels($consumer->context);
     $form['authorization']['levels'] = array(
       '#tree' => TRUE,
     );
@@ -146,7 +151,9 @@ function _oauth_common_authorize_validate($form, &$form_state) {
   $values = $form_state['values'];
   $got_permission = FALSE;
 
-  $auth_levels = oauth_common_authorization_levels();
+  $consumer = DrupalOAuthConsumer::load($values['consumer_key']);
+
+  $auth_levels = oauth_common_authorization_levels($consumer->context);
   foreach ($auth_levels as $name => $level) {
     if ($values['levels'][$name]) {
       $got_permission = TRUE;
@@ -154,7 +161,7 @@ function _oauth_common_authorize_validate($form, &$form_state) {
     }
   }
 
-  $got_permission = $got_permission || $values['full_access'];
+  $got_permission = $got_permission || $values['full_access']; // TODO: Full access should be a configurable auth level
 
   if (!$got_permission) {
     form_set_error('confirm', t('You haven\'t given the application access to anything. Click on "Deny access" or just close this window if you don\'t want to authorize it.'));
@@ -162,24 +169,25 @@ function _oauth_common_authorize_validate($form, &$form_state) {
 }
 
 function _oauth_common_authorize_submit(&$form, &$form_state) {
+  global $user;
   $values = $form_state['values'];
   // Unserialize the stored oauth parameters
   $parameters = unserialize($values['oauth_parameters']);
 
   // Save the list of all services that the user allowed the
   // consumer to do
-  global $user;
   $token = DrupalOAuthToken::load($parameters['oauth_token']);
   $token->uid = $user->uid;
   $token->authorized = 1;
   $token->services = array();
+  $consumer = DrupalOAuthConsumer::load($token->consumer_key);
 
   // Add services
-  if ($values['full_access']) {
+  if ($values['full_access']) { // TODO: Full access should be a configurable auth level
     $token->services[] = '*';
   }
   else {
-    $auth_levels = oauth_common_authorization_levels();
+    $auth_levels = oauth_common_authorization_levels($consumer->context);
     foreach ($auth_levels as $name => $level) {
       if ($values['levels'][$name]) {
         $token->services[] = $name;
@@ -189,7 +197,7 @@ function _oauth_common_authorize_submit(&$form, &$form_state) {
 
   $token->write(TRUE);
 
-  $got_permission = $got_permission || $values['full_access'];
+  $got_permission = $got_permission || $values['full_access']; // TODO: Full access should be a configurable auth level
 
   if (isset($parameters['oauth_callback'])) {
     // Pick the callback url apart and add the token parameter
@@ -517,7 +525,7 @@ function oauth_common_permissions_form(&$form, $consumer, $default_services=arra
     array('*' => (object)array(
       'title' => t('Full access'),
       'description' => t('This will give !appname the same permissions that you normally have and will allow it to access the full range of services that !sitename provides.', $msgargs),
-    )), oauth_common_authorization_levels());
+    )), oauth_common_authorization_levels($consumer->context));
   $form['authorization']['levels'] = array(
     '#tree' => TRUE,
   );

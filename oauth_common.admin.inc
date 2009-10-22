@@ -39,17 +39,21 @@ function _oauth_common_admin_contexts() {
  * Menu system callback that generates a form for
  * administrating the authorization levels.
  *
- * @param string $context THe context whose authorization levels should be administered.
+ * @param string $context
+ *  The context whose authorization levels should be administered.
  * 
  * @return array
  *  A form array.
  */
-function _oauth_common_admin_authorization($context) {
-  // TODO: Take context into account.
-  // TODO: Default context?
+function _oauth_common_admin_authorization($context='default') {
   $form = array();
 
-  $levels = oauth_common_authorization_levels();
+  $form['context'] = array(
+    '#type' => 'value',
+    '#value' => $context,
+  );
+
+  $levels = oauth_common_authorization_levels($context);
   foreach ($levels as $name => $level) {
     $set = array(
       '#type' => 'fieldset',
@@ -109,19 +113,21 @@ function _oauth_common_admin_authorization($context) {
 
 function _oauth_common_admin_authorization_submit($form, $form_state) {
   $values = $form_state['values'];
-  $levels = oauth_common_authorization_levels();
+  $context = $values['context'];
+  $levels = oauth_common_authorization_levels($context);
 
   // Update titles and descriptions
   foreach ($levels as $name => $level) {
-    oauth_common_write_authorization_level($name, $values[$name]['title'], $values[$name]['description']);
+    oauth_common_write_authorization_level($name, $values[$name]['title'], $values[$name]['description'], $context);
   }
 
   // Add a authorization level if the name and title fields have been filled
   $add = $values['add_level'];
   if (!empty($add['name']) && !empty($add['title'])) {
-    oauth_common_write_authorization_level($add['name'], $add['title'], $add['description']);
+    oauth_common_write_authorization_level($add['name'], $add['title'], $add['description'], $context);
   }
 
+  // TODO: This doesn't belong here, we need a hook that services_oauth could respond to
   // Clear the services cache so that methods are updated
   cache_clear_all('services:', 'cache', TRUE);
 }
@@ -131,19 +137,25 @@ function _oauth_common_admin_authorization_submit($form, $form_state) {
  * level.
  *
  * @param array $form_state
+ * @param string $context
+ *  The context of the authorization to delete.
  * @param string $authorization
  *  The machine-readable name of the authorization level.
  * @return array
  *  A form array.
  */
-function _oauth_common_admin_authorization_delete($form_state, $authorization) {
-  $levels = oauth_common_authorization_levels();
+function _oauth_common_admin_authorization_delete($form_state, $context, $authorization) {
+  $levels = oauth_common_authorization_levels($context);
 
   drupal_set_title(t('Deleting "!title"', array(
     '!title' => $levels[$authorization]->title,
   )));
 
   $form = array(
+    'context' => array(
+      '#type' => 'value',
+      '#value' => $context,
+    ),
     'authorization' => array(
       '#type' => 'value',
       '#value' => $authorization,
@@ -173,9 +185,13 @@ function _oauth_common_admin_authorization_delete($form_state, $authorization) {
 }
 
 function _oauth_common_admin_authorization_delete_submit($form, $form_state) {
+  $context = $form_state['values']['context'];
   $authorization = $form_state['values']['authorization'];
-  $levels = oauth_common_authorization_levels();
-  oauth_common_delete_authorization_level($authorization);
+
+  // Load the authorization level before we delete is so that
+  // we can use it to display the title in our status message.
+  $levels = oauth_common_authorization_levels($context);
+  oauth_common_delete_authorization_level($authorization, $context);
   drupal_set_message(t('The authorization level "!title" has been deleted', array('!title' => $levels[$authorization]->title)));
-  drupal_goto('admin/settings/oauth/authorization');
+  drupal_goto('admin/settings/oauth/authorizations/' . $context);
 }

@@ -77,10 +77,10 @@ function oauth_common_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  $menu['admin/settings/oauth/authorization/%/delete'] = array(
+  $menu['admin/settings/oauth/%/authorization/%/delete'] = array(
     'title' => 'Delete authorization level',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('_oauth_common_admin_authorization_delete', 4),
+    'page arguments' => array('_oauth_common_admin_authorization_delete', 3, 5),
     'access arguments' => array('administer oauth'),
     'file' => 'oauth_common.admin.inc',
     'type' => MENU_CALLBACK,
@@ -266,7 +266,7 @@ function services_oauth_xrds() {
  *
  * @param stdClass $user
  *  A user object.
- * @param string $permission 
+ * @param string $permission
  *  The permission that is needed in addition to edit access on the $user.
  */
 function _oauth_common_user_access($user, $permission) {
@@ -286,19 +286,33 @@ function _oauth_common_always_true() {
 }
 
 /**
- * Returns the authorization levels as an associative array
+ * Returns all the the authorization contexts and their authorization levels.
+ *
+ * @return array
+ */
+function oauth_common_authorization_contexts() {
+  static $contexts;
+  if (!$contexts) {
+    $contexts = module_invoke_all('oauth_default_contexts'); // TODO: More stuff
+    $res = db_query("SELECT * FROM {oauth_authorization_levels}");
+    while ($level = db_fetch_object($res)) {
+      $contexts[$level->context][$level->name] = $level;
+    }
+  }
+  return $contexts;
+}
+
+/**
+ * Returns the authorization levels for a context as an associative array
  * keyed after the machine readable name.
  *
  * @return array
  */
-function oauth_common_authorization_levels() {
-  global $levels;
-  if (!$levels) {
-    $levels = array();
-    $res = db_query("SELECT * FROM {oauth_authorization_levels}");
-    while ($level = db_fetch_object($res)) {
-      $levels[$level->name] = $level;
-    }
+function oauth_common_authorization_levels($context='default') {
+  $contexts = oauth_common_authorization_contexts();
+  $levels = NULL;
+  if (isset($contexts[$context])) {
+    $levels = $contexts[$context];
   }
   return $levels;
 }
@@ -309,19 +323,22 @@ function oauth_common_authorization_levels() {
  * @param string $name
  *  The machine-readable name of the authorization level
  * @param string $title
- *  The human-readable name of the authentication level
+ *  The human-readable name of the authentication level.
  * @param string $description
  *  The description of the authentication level
+ * @param string $context
+ *  The context the authorization is valid within.
  * @return void
  */
-function oauth_common_write_authorization_level($name, $title, $description) {
-  $levels = oauth_common_authorization_levels();
+function oauth_common_write_authorization_level($name, $title, $description, $context='default') {
+  $levels = oauth_common_authorization_levels($context);
   $update = NULL;
   if (isset($levels[$name])) {
     $update = array('name');
   }
   drupal_write_record('oauth_authorization_levels', $values = array(
     'name' => $name,
+    'context' => $context,
     'title' => $title,
     'description' => $description,
   ), $update);
@@ -331,10 +348,12 @@ function oauth_common_write_authorization_level($name, $title, $description) {
  * Deletes a authorization level
  *
  * @param string $name
- *  The machine-readable name of the authorization level
+ *  The machine-readable name of the authorization level.
+ * @param string $context
+ *  The context of the authorization level
  * @return void
  */
-function oauth_common_delete_authorization_level($name) {
+function oauth_common_delete_authorization_level($name, $context='default') {
   db_query("DELETE FROM {oauth_authorization_levels} WHERE name='%s'", array(
     ':name' => $name,
   ));
