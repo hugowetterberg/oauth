@@ -57,6 +57,14 @@ function oauth_common_schema() {
         'default' => 0,
         'description' => 'Determines the order that the authorization levels will be displayed in.',
       ),
+      'enabled' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 1,
+        'description' => 'Whether the authorization level is enabled or disabled.',
+      ),
     ),
     'primary key' => array('name'),
   );
