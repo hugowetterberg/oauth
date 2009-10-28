@@ -51,6 +51,12 @@ function oauth_common_schema() {
         'length'      => 255,
         'not null'    => TRUE,
       ),
+      'weight' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Determines the order that the authorization levels will be displayed in.',
+      ),
     ),
     'primary key' => array('name'),
   );

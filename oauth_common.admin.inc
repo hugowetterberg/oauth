@@ -32,7 +32,8 @@ function _oauth_common_admin_settings_validate($form, $form_state) {
 }
 
 function _oauth_common_admin_contexts() {
-  // TODO: Should the contexts be stored in the database?
+  $contexts = oauth_common_authorization_contexts();
+  return theme('oauth_common_context_list', $contexts);
 }
 
 /**
@@ -45,7 +46,7 @@ function _oauth_common_admin_contexts() {
  * @return array
  *  A form array.
  */
-function _oauth_common_admin_authorization($context='default') {
+function _oauth_common_admin_authorization($form_state, $context='default') {
   $form = array();
 
   $form['context'] = array(
@@ -57,7 +58,7 @@ function _oauth_common_admin_authorization($context='default') {
   foreach ($levels as $name => $level) {
     $set = array(
       '#type' => 'fieldset',
-      '#title' => $name . ' - ' . $level->title,
+      '#title' => '"' . $name . '" - ' . $level->title,
       '#tree' => TRUE,
       'title' => array(
         '#type' => 'textfield',
@@ -71,9 +72,20 @@ function _oauth_common_admin_authorization($context='default') {
         '#title' => t('Description'),
         '#default_value' => $level->description,
       ),
+      'weight' => array(
+        '#type' => 'textfield',
+        '#maxlength' => 3,
+        '#title' => t('Weight'),
+        '#default_value' => $level->weight,
+      ),
+      'enabled' => array(
+        '#type' => 'checkbox',
+        '#title' => t('Enabled'),
+        '#default_value' => $level->enabled,
+      ),
       'delete' => array(
         '#type' => 'item',
-        '#value' => l('Delete', 'admin/settings/oauth/authorization/' . $name . '/delete'),
+        '#value' => l('Delete', 'admin/settings/oauth/' . $context . '/authorizations/' . $name . '/delete'),
       ),
     );
     $form[$name] = $set;
@@ -83,6 +95,8 @@ function _oauth_common_admin_authorization($context='default') {
     '#type' => 'fieldset',
     '#tree' => TRUE,
     '#title' => t('Add a authorization level'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
     'name' => array(
       '#type' => 'textfield',
       '#maxlength' => 32,
@@ -118,7 +132,9 @@ function _oauth_common_admin_authorization_submit($form, $form_state) {
 
   // Update titles and descriptions
   foreach ($levels as $name => $level) {
-    oauth_common_write_authorization_level($name, $values[$name]['title'], $values[$name]['description'], $context);
+    $lv = $values[$name];
+    $lv['weight'] = intval($lv['weight']);
+    oauth_common_write_authorization_level($name, $lv['title'], $lv['description'], $context, $lv['weight'], $lv['enabled']);
   }
 
   // Add a authorization level if the name and title fields have been filled

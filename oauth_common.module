@@ -32,10 +32,37 @@ function services_oauth_enable() {
 }
 
 /**
+ * Implementation of hook_theme().
+ */
+function oauth_common_theme() {
+  return array(
+    'oauth_common_context_list' => array(
+      'template' => 'oauth_common_context_list',
+      'arguments' => array(
+        'contexts' => array(),
+      ),
+    ),
+  );
+}
+
+/**
  * Implementation of hook_perm().
  */
 function oauth_common_perm() {
-  return array('oauth authorize consumers', 'oauth register consumers', 'administer oauth');
+  $permissions = array(
+    'oauth authorize any consumers', 
+    'oauth register any consumers', 
+    'administer oauth',
+  );
+
+  // Add seperate permissions for creating and
+  // authorizing consumers in each context.
+  foreach(oauth_common_authorization_contexts() as $context => $levels) {
+    $permissions[] = sprintf('oauth register consumers in %s', $context);
+    $permissions[] = sprintf('oauth authorize consumers in %s', $context);
+  }
+
+  return $permissions;
 }
 
 /**
@@ -77,8 +104,8 @@ function oauth_common_menu() {
     'type' => MENU_CALLBACK,
   );
 
-  $menu['admin/settings/oauth/%/authorization/%/delete'] = array(
-    'title' => 'Delete authorization level',
+  $menu['admin/settings/oauth/%/authorizations/%/delete'] = array(
+    'title' => 'Delete/disable an authorization level',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('_oauth_common_admin_authorization_delete', 3, 5),
     'access arguments' => array('administer oauth'),
@@ -293,13 +320,47 @@ function _oauth_common_always_true() {
 function oauth_common_authorization_contexts() {
   static $contexts;
   if (!$contexts) {
-    $contexts = module_invoke_all('oauth_default_contexts'); // TODO: More stuff
+    $contexts = module_invoke_all('oauth_default_contexts');
+
+    // Load contexts from the database
     $res = db_query("SELECT * FROM {oauth_authorization_levels}");
     while ($level = db_fetch_object($res)) {
+      $level->from_db = TRUE;
       $contexts[$level->context][$level->name] = $level;
+    }
+
+    foreach ($contexts as $context => $levels) {
+      foreach ($levels as $name => $level) {
+        // Make sure that all authorization levels are objects
+        $level = (object)$level;
+
+        // Enforce defaults
+        $level->name = $name;
+        if (!isset($level->enabled)) {
+          $level->enabled = TRUE;
+        }
+        if (!isset($level->weight)) {
+          $level->weight = 0;
+        }
+
+        $contexts[$context][$name] = $level;
+      }
+      uasort($contexts[$context], '_oauth_common_sort_authorization_levels');
     }
   }
   return $contexts;
+}
+
+/**
+ * Compares the weight of authorization level objects. Authorization levels
+ * without a weight are interpreted as having a weight of 0.
+ *
+ * @param object $a 
+ * @param object $b 
+ * @return int
+ */
+function _oauth_common_sort_authorization_levels($a, $b) {
+  return (isset($a->weight) ? $a->weight : 0) - (isset($b->weight) ? $b->weight : 0);
 }
 
 /**
@@ -318,30 +379,38 @@ function oauth_common_authorization_levels($context='default') {
 }
 
 /**
- * Creates a new authorization level
+ * Creates a new authorization level.
  *
  * @param string $name
- *  The machine-readable name of the authorization level
+ *  The machine-readable name of the authorization level.
  * @param string $title
  *  The human-readable name of the authentication level.
  * @param string $description
- *  The description of the authentication level
+ *  The description of the authentication level.
  * @param string $context
  *  The context the authorization is valid within.
+ * @param int $weight
+ *  The weight of the authorization level.
+ * @param bool $enabled
+ *  The enabled state of the authorization level.
  * @return void
  */
-function oauth_common_write_authorization_level($name, $title, $description, $context='default') {
+function oauth_common_write_authorization_level($name, $title, $description, $context='default', $weight=0, $enabled=TRUE) {
   $levels = oauth_common_authorization_levels($context);
   $update = NULL;
-  if (isset($levels[$name])) {
-    $update = array('name');
+  if (isset($levels[$name]) && $levels[$name]->from_db) {
+    $update = array('name', 'context');
   }
-  drupal_write_record('oauth_authorization_levels', $values = array(
+  $values = array(
     'name' => $name,
     'context' => $context,
     'title' => $title,
     'description' => $description,
-  ), $update);
+    'weight' => $weight,
+    'enabled' => $enabled,
+  );
+
+  drupal_write_record('oauth_authorization_levels', $values, $update);
 }
 
 /**

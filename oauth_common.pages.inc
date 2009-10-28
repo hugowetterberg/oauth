@@ -73,7 +73,7 @@ function _oauth_common_authorize() {
       '#value'  => serialize($req->get_parameters()),
     );
 
-    $form['oauth_consumer'] => array(
+    $form['oauth_consumer'] = array(
       '#type'   => 'value',
       '#value'  => $consumer->key,
     );
