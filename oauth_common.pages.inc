@@ -100,11 +100,6 @@ function _oauth_common_authorize() {
       '#type' => 'fieldset',
       '#title' => t('Permissions'),
       '#options' => $auth_levels,
-      'full_access' => array( // TODO: Full access should be a configurable auth level
-        '#type' => 'checkbox',
-        '#title' => t('Full access'),
-        '#description' => t('This will give !appname the same permissions that you normally have and will allow it to access the full range of services that !sitename provides.', $msgargs),
-      ),
     );
 
     $auth_levels = oauth_common_authorization_levels($consumer->context);
@@ -151,9 +146,9 @@ function _oauth_common_authorize_validate($form, &$form_state) {
   $values = $form_state['values'];
   $got_permission = FALSE;
 
-  $consumer = DrupalOAuthConsumer::load($values['consumer_key']);
-
+  $consumer = DrupalOAuthConsumer::load($values['oauth_consumer']);
   $auth_levels = oauth_common_authorization_levels($consumer->context);
+
   foreach ($auth_levels as $name => $level) {
     if ($values['levels'][$name]) {
       $got_permission = TRUE;
@@ -292,10 +287,10 @@ function _oauth_common_user_applications($form_state, $account) {
         $apps[$consumer->key] = array(
           '#prefix' => '<div class="consumer-application"><h3>' . $consumer->name . '</h3>',
           '#suffix' => '</div>',
-          'type' => array(
+          'context' => array(
             '#type' => 'item',
-            '#title' => t('Type'),
-            '#value' => $consumer->type,
+            '#title' => t('Context'),
+            '#value' => $consumer->context,
           ),
           'consumer_key' => array(
             '#type' => 'item',
@@ -563,14 +558,17 @@ function _oauth_common_user_applications_add($form_state, $account) {
     '#required' => FALSE,
   );
 
-  $form['type'] = array(
+  $allowed_contexts = array();
+  foreach(oauth_common_authorization_contexts() as $context => $levels) {
+    if (user_access(sprintf('oauth register consumers in %s', $context))) {
+      $allowed_contexts[$context] = $context;
+    }
+  }
+
+  $form['context'] = array(
     '#type' => 'select',
-    '#title' => t('Application type'),
-    '#options' => array(
-      'community' => t('Community'),
-      'commercial' => t('Commercial'),
-      'development' => t('Development'),
-    ),
+    '#title' => t('Application context'),
+    '#options' => $allowed_contexts,
   );
 
   $form['submit'] = array(
