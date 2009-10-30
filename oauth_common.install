@@ -5,16 +5,16 @@ function oauth_common_install() {
   drupal_install_schema('oauth_common');
 
   // Create default authorization levels
-  oauth_common_write_authorization_level('*', 'Full access', 'This will give !appname the same permissions that you normally have and will allow it to access the full range of services that !sitename provides.', 'default', -1);
-  $insert = "INSERT INTO {oauth_authorization_levels}(context, name, title, description, weight) VALUES('%s', '%s', '%s', '%s', %d)";
-  db_query($insert, array(':context' => 'default', ':name' => 'read',    ':title' => 'Read access',
-    ':description' => 'This will allow !appname to fetch content that you have access to on !sitename.', ':weight' => 0));
-  db_query($insert, array(':context' => 'default', ':name' => 'update',  ':title' => 'Update access',
-    ':description' => 'This will allow !appname to update content that you have permissions to edit.', ':weight' => 0));
-  db_query($insert, array(':context' => 'default', ':name' => 'create',  ':title' => 'Create access',
-    ':description' => 'This will allow !appname to create new content on !sitename.', ':weight' => 0));
-  db_query($insert, array(':context' => 'default', ':name' => 'delete',  ':title' => 'Delete access',
-    ':description' => 'This will allow !appname to delete content from !sitename.', ':weight' => 0));
+  oauth_common_write_authorization_level('*', 'Full access',
+    'This will give !appname the same permissions that you normally have and will allow it to access the full range of services that !sitename provides.', 'default', -1);
+  oauth_common_write_authorization_level('read', 'Read access',
+    'This will allow !appname to fetch content that you have access to on !sitename.');
+  oauth_common_write_authorization_level('update', 'Update access',
+    'This will allow !appname to update content that you have permissions to edit.');
+  oauth_common_write_authorization_level('create', 'Create access',
+    'This will allow !appname to create new content on !sitename.');
+  oauth_common_write_authorization_level('delete', 'Delete access',
+    'This will allow !appname to delete content from !sitename.');
 }
 
 function oauth_common_uninstall() {
