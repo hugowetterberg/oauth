@@ -343,25 +343,34 @@ function oauth_common_get_access_tokens($consumer_key, $provider=TRUE) {
     WHERE token_key = '%s'", array(
       ':token_key' => $key,
     ));
+  
 }
 
 /**
  * Stores tokens for use when the site acts as a consumer.
  *
  * @param string $key
- *  The key of the
+ *  The consumer key.
  * @param string $secret
- * @param string $type
+ *  The consumer secret.
  * @param string $uid
+ *  The user that this consumer key is stored on behalf of. Defaults to
+ *  the currently logged in user.
  * @return void
- * @author Hugo Wetterberg
  */
-function oauth_common_write_consumer_token($key, $secret, $type, $uid = NULL) {
+function oauth_common_write_consumer_token($key, $secret, $uid = NULL) {
   if ($uid === NULL) {
     global $user;
     $uid = $user->uid;
   }
-
+  $exists = oauth_common_get_consumer_token($key);
+  $update = $exists ? array('token_key') : NULL;
+  $values = array(
+    'token_key' => $key,
+    'secret' => $secret,
+    'uid' => $uid,
+  );
+  drupal_write_record('oauth_common_consumer_token', $values, $update);
 }
 
 /*
