@@ -4,3 +4,4 @@ description = Provides common OAuth functionality
 dependencies[] = autoload
 dependencies[] = inputstream
 core = 6.x
+php = 5.2
