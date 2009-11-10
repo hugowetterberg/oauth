@@ -10,6 +10,7 @@ function _oauth_common_update_6100() {
   $ret = array();
 
   db_add_index($ret, 'oauth_common_token', 'consumer', array('consumer_key'));
+  db_drop_field($ret, 'oauth_common_token', 'type');
 
   db_add_field($ret, 'oauth_authorization_levels', 'context', array(
     'description' => t('The context for the authorization level.'),

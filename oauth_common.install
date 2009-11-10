@@ -235,12 +235,6 @@ function oauth_common_schema() {
         'length'      => 32,
         'not null'    => TRUE
       ),
-      'type' => array(
-        'description' => t('Type of the token: request, access or consumer.'),
-        'type'        => 'varchar',
-        'length'      => 8,
-        'not null'    => TRUE
-      ),
       'uid' => array(
         'description' => t('The user that\'s associated with the token, if any.'),
         'type'        => 'int',
