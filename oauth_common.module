@@ -337,13 +337,33 @@ function oauth_common_get_consumer_token($key) {
   return $token;
 }
 
-function oauth_common_get_access_tokens($consumer_key, $provider=TRUE) {
-  $res = db_query("SELECT secret
-    FROM {oauth_common_consumer_token}
-    WHERE token_key = '%s'", array(
-      ':token_key' => $key,
+/**
+ * Gets stored tokens for a consumer.
+ *
+ * @param string $consumer_key
+ *  The key of the consumer to get tokens for.
+ * @param string $type
+ *  The token type: 'request' or 'access'.
+ * @param string $provider_tokens
+ *  Optional. Pass TRUE if provider tokens should be return, FALSE if consumer
+ *  tokens should be returned. Defaults to TRUE.
+ * @return array
+ *  An array of DrupalOAuthToken objects.
+ */
+function oauth_common_get_tokens($consumer_key, $type='access', $provider_tokens=TRUE) {
+  $res = db_query("SELECT *
+    FROM {oauth_common_token}
+    WHERE consumer_key = '%s'
+    AND type = '%s',
+    AND provider_token = %d", array(
+      ':consumer_key' => $consumer_key,
+      ':provider_token' => $provider_tokens,
     ));
-  
+  $tokens = array();
+  while ($token = DrupalOAuthToken::fromResult($res)) {
+    $tokens[] = $token;
+  }
+  return $tokens;
 }
 
 /**
