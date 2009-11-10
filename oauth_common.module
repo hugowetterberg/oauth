@@ -330,7 +330,7 @@ function oauth_common_get_consumer_token($key) {
       ':token_key' => $key,
     ));
 
-  $token = nil;
+  $token = NULL;
   if ($secret = db_result($res)) {
     $token = new OAuthToken($key, $secret);
   }
