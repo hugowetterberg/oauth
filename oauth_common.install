@@ -244,9 +244,6 @@ function oauth_common_schema() {
       ),
     ),
    'primary key' => array('token_key'),
-   'indexes' => array(
-      'token_key_type' => array('token_key', 'type'),
-    ),
   );
   $schema['oauth_common_nonce'] = array(
     'description' => t('Stores timestamp against nonce for repeat attacks.'),
