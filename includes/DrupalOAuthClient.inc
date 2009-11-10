@@ -26,9 +26,9 @@ class DrupalOAuthClient {
     return $sign;
   }
 
-  public function getRequestToken() {
+  public function getRequestToken($endpoint='/oauth/request_token') {
     if (!$this->requestToken) {
-      $response = $this->get('/oauth/request_token');
+      $response = $this->get($endpoint);
       $params = array();
       parse_str($response, $params);
 
@@ -36,7 +36,11 @@ class DrupalOAuthClient {
         throw new Exception('No valid request token was returned');
       }
 
-      $this->requestToken = new OAuthToken($params['oauth_token'], $params['oauth_token_secret']);
+      $this->requestToken = new DrupalOAuthToken($params['oauth_token'], $params['oauth_token_secret'], array(
+        'type' => 'request',
+        'consumer_key' => $this->consumer->key,
+        'provider_token' => FALSE,
+      ));
     }
 
     return clone $this->requestToken;
