@@ -50,8 +50,8 @@ function oauth_common_theme() {
  */
 function oauth_common_perm() {
   $permissions = array(
-    'oauth authorize any consumers', 
-    'oauth register any consumers', 
+    'oauth authorize any consumers',
+    'oauth register any consumers',
     'administer oauth',
   );
 
@@ -313,6 +313,58 @@ function _oauth_common_always_true() {
 }
 
 /**
+ * Gets tokens for stored on behalf of a consumer and user.
+ *
+ * This function returns a consumer token that has been stored for
+ * accessing _other_ sites. That is when the site acts as a
+ * consumer, not a provider.
+ *
+ * @param string $key
+ *  The consumer key.
+ * @return OAuthToken
+ */
+function oauth_common_get_consumer_token($key) {
+  $res = db_query("SELECT secret
+    FROM {oauth_common_consumer_token}
+    WHERE token_key = '%s'", array(
+      ':token_key' => $key,
+    ));
+
+  $token = nil;
+  if ($secret = db_result($res)) {
+    $token = OAuthToken($key, $secret);
+  }
+  return $token;
+}
+
+function oauth_common_get_access_tokens($consumer_key, $provider=TRUE) {
+  $res = db_query("SELECT secret
+    FROM {oauth_common_consumer_token}
+    WHERE token_key = '%s'", array(
+      ':token_key' => $key,
+    ));
+}
+
+/**
+ * Stores tokens for use when the site acts as a consumer.
+ *
+ * @param string $key
+ *  The key of the
+ * @param string $secret
+ * @param string $type
+ * @param string $uid
+ * @return void
+ * @author Hugo Wetterberg
+ */
+function oauth_common_write_consumer_token($key, $secret, $type, $uid = NULL) {
+  if ($uid === NULL) {
+    global $user;
+    $uid = $user->uid;
+  }
+
+}
+
+/*
  * Returns all the the authorization contexts and their authorization levels.
  *
  * @return array
@@ -355,8 +407,8 @@ function oauth_common_authorization_contexts() {
  * Compares the weight of authorization level objects. Authorization levels
  * without a weight are interpreted as having a weight of 0.
  *
- * @param object $a 
- * @param object $b 
+ * @param object $a
+ * @param object $b
  * @return int
  */
 function _oauth_common_sort_authorization_levels($a, $b) {

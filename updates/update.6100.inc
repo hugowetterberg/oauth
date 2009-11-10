@@ -3,9 +3,13 @@
 
 /**
  * This update adds the concept of contexts for consumers and authorization levels.
+ * Also adding a couple of indexes that make sense when oauth_common is
+ * acting as a consumer of other services.
  */
-function _oauth_common_update_6004() {
+function _oauth_common_update_6100() {
   $ret = array();
+
+  db_add_index($ret, 'oauth_common_token', 'consumer', array('consumer_key'));
 
   db_add_field($ret, 'oauth_authorization_levels', 'context', array(
     'description' => t('The context for the authorization level.'),

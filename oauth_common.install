@@ -217,6 +217,7 @@ function oauth_common_schema() {
    'primary key' => array('token_key'),
    'indexes' => array(
       'token_key_type' => array('token_key', 'type'),
+      'consumer_key' => array('consumer_key'),
     ),
   );
   $schema['oauth_common_consumer_token'] = array(
@@ -314,8 +315,10 @@ function oauth_common_update_6003() {
 
 /**
  * This update adds the concept of contexts for consumers and authorization levels.
+ * Also adding a couple of indexes that make sense when oauth_common is
+ * acting as a consumer of other services.
  */
-function oauth_common_update_6004() {
-  module_load_include('6004.inc', 'oauth_common', 'updates/update');
-  return _oauth_common_update_6004();
+function oauth_common_update_6100() {
+  module_load_include('6100.inc', 'oauth_common', 'updates/update');
+  return _oauth_common_update_6100();
 }
