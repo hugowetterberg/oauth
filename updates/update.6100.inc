@@ -13,6 +13,19 @@ function _oauth_common_update_6100() {
 
   db_drop_index($ret, 'oauth_common_consumer_token', 'token_key_type');
   db_drop_field($ret, 'oauth_common_consumer_token', 'type');
+  db_add_field($ret, 'oauth_common_consumer_token', 'provider_url', array(
+    'description' => t('The url to the provider.'),
+    'type'        => 'varchar',
+    'length'      => 255,
+    'not null'    => TRUE,
+  ));
+  db_add_field($ret, 'oauth_common_consumer_token', 'access_endpoint', array(
+    'description' => t('The endpoint to fetch the access token.'),
+    'type'        => 'varchar',
+    'length'      => 255,
+    'not null'    => TRUE,
+    'default'     => '',
+  ));
 
   db_add_field($ret, 'oauth_authorization_levels', 'context', array(
     'description' => t('The context for the authorization level.'),

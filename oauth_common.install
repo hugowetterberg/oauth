@@ -242,6 +242,19 @@ function oauth_common_schema() {
         'not null'    => TRUE,
         'default'     => 0,
       ),
+      'provider_url' => array(
+        'description' => t('The url to the provider.'),
+        'type'        => 'varchar',
+        'length'      => 255,
+        'not null'    => TRUE,
+      ),
+      'access_endpoint' => array(
+        'description' => t('The endpoint to fetch the access token.'),
+        'type'        => 'varchar',
+        'length'      => 255,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
     ),
    'primary key' => array('token_key'),
   );

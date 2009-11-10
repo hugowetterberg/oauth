@@ -316,8 +316,6 @@ function _oauth_common_always_true() {
  * Gets a request token from a oauth provider and returns the authorization
  * url. The request token is saved in the database.
  *
- * @param string $provider_url
- *  The url to the provider
  * @param OAuthToken $consumer_token
  *  The consumer token to use
  * @param string $request_endpoint
@@ -328,36 +326,11 @@ function _oauth_common_always_true() {
  *  The url that the client should be redirected to to authorize
  *  the request token.
  */
-function oauth_common_get_request_token($provider_url, $consumer_token, $request_endpoint='/oauth/request_token', $authorize_endpoint='/oauth/authorize') {
-  $client = new DrupalOAuthClient($provider_url, $consumer_token);
+function oauth_common_get_request_token($consumer_token, $request_endpoint='/oauth/request_token', $authorize_endpoint='/oauth/authorize') {
+  $client = new DrupalOAuthClient($consumer_token);
   $request_token = $client->getRequestToken($request_endpoint);
   $request_token->write();
   return $client->getAuthorizationUrl($authorize_endpoint);
-}
-
-/**
- * Gets tokens for stored on behalf of a consumer and user.
- *
- * This function returns a consumer token that has been stored for
- * accessing _other_ sites. That is when the site acts as a
- * consumer, not a provider.
- *
- * @param string $key
- *  The consumer key.
- * @return OAuthToken
- */
-function oauth_common_get_consumer_token($key) {
-  $res = db_query("SELECT secret
-    FROM {oauth_common_consumer_token}
-    WHERE token_key = '%s'", array(
-      ':token_key' => $key,
-    ));
-
-  $token = NULL;
-  if ($secret = db_result($res)) {
-    $token = new OAuthToken($key, $secret);
-  }
-  return $token;
 }
 
 /**
@@ -387,33 +360,6 @@ function oauth_common_get_tokens($consumer_key, $type='access', $provider_tokens
     $tokens[] = $token;
   }
   return $tokens;
-}
-
-/**
- * Stores tokens for use when the site acts as a consumer.
- *
- * @param string $key
- *  The consumer key.
- * @param string $secret
- *  The consumer secret.
- * @param string $uid
- *  The user that this consumer key is stored on behalf of. Defaults to
- *  the currently logged in user.
- * @return void
- */
-function oauth_common_write_consumer_token($key, $secret, $uid = NULL) {
-  if ($uid === NULL) {
-    global $user;
-    $uid = $user->uid;
-  }
-  $exists = oauth_common_get_consumer_token($key);
-  $update = $exists ? array('token_key') : NULL;
-  $values = array(
-    'token_key' => $key,
-    'secret' => $secret,
-    'uid' => $uid,
-  );
-  drupal_write_record('oauth_common_consumer_token', $values, $update);
 }
 
 /*
