@@ -4,6 +4,8 @@
 function oauth_common_install() {
   drupal_install_schema('oauth_common');
 
+  module_load_include('module', 'oauth_common');
+
   // Create default authorization levels
   oauth_common_write_authorization_level('*', 'Full access',
     'This will give !appname the same permissions that you normally have and will allow it to access the full range of services that !sitename provides.', 'default', -1);
