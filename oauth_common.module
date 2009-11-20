@@ -140,6 +140,21 @@ function oauth_common_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  $menu['oauth/request_token_authorized'] = array(
+    'page callback' => '_oauth_common_request_token_authorized',
+    'access callback' => '_oauth_common_always_true',
+    'file' => 'oauth_common.pages.inc',
+    'type' => MENU_CALLBACK,
+  );
+
+  $menu['oauth/authorized'] = array(
+    'title' => 'Authorization finished',
+    'page callback' => '_oauth_common_authorized',
+    'access callback' => '_oauth_common_always_true',
+    'file' => 'oauth_common.pages.inc',
+    'type' => MENU_CALLBACK,
+  );
+
   $menu['oauth/access_token'] = array(
     'page callback' => '_oauth_common_access_token',
     'access callback' => '_oauth_common_always_true',
