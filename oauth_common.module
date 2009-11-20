@@ -50,8 +50,8 @@ function oauth_common_theme() {
  */
 function oauth_common_perm() {
   $permissions = array(
-    'oauth authorize any consumers', 
-    'oauth register any consumers', 
+    'oauth authorize any consumers',
+    'oauth register any consumers',
     'administer oauth',
   );
 
@@ -313,6 +313,56 @@ function _oauth_common_always_true() {
 }
 
 /**
+ * Gets a request token from a oauth provider and returns the authorization
+ * url. The request token is saved in the database.
+ *
+ * @param OAuthToken $consumer_token
+ *  The consumer token to use
+ * @param string $request_endpoint
+ *  Optional. Pass a custom endpoint if needed. Defaults to '/oauth/request_token'.
+ * @param string $authorize_endpoint
+ *  Optional. Pass a custom endpoint if needed. Defaults to '/oauth/authorize'.
+ * @return string
+ *  The url that the client should be redirected to to authorize
+ *  the request token.
+ */
+function oauth_common_get_request_token($consumer_token, $request_endpoint='/oauth/request_token', $authorize_endpoint='/oauth/authorize') {
+  $client = new DrupalOAuthClient($consumer_token);
+  $request_token = $client->getRequestToken($request_endpoint);
+  $request_token->write();
+  return $client->getAuthorizationUrl($authorize_endpoint);
+}
+
+/**
+ * Gets stored tokens for a consumer.
+ *
+ * @param string $consumer_key
+ *  The key of the consumer to get tokens for.
+ * @param string $type
+ *  The token type: 'request' or 'access'.
+ * @param string $provider_tokens
+ *  Optional. Pass TRUE if provider tokens should be return, FALSE if consumer
+ *  tokens should be returned. Defaults to TRUE.
+ * @return array
+ *  An array of DrupalOAuthToken objects.
+ */
+function oauth_common_get_tokens($consumer_key, $type='access', $provider_tokens=TRUE) {
+  $res = db_query("SELECT *
+    FROM {oauth_common_token}
+    WHERE consumer_key = '%s'
+    AND type = '%s',
+    AND provider_token = %d", array(
+      ':consumer_key' => $consumer_key,
+      ':provider_token' => $provider_tokens,
+    ));
+  $tokens = array();
+  while ($token = DrupalOAuthToken::fromResult($res)) {
+    $tokens[] = $token;
+  }
+  return $tokens;
+}
+
+/*
  * Returns all the the authorization contexts and their authorization levels.
  *
  * @return array
@@ -355,8 +405,8 @@ function oauth_common_authorization_contexts() {
  * Compares the weight of authorization level objects. Authorization levels
  * without a weight are interpreted as having a weight of 0.
  *
- * @param object $a 
- * @param object $b 
+ * @param object $a
+ * @param object $b
  * @return int
  */
 function _oauth_common_sort_authorization_levels($a, $b) {

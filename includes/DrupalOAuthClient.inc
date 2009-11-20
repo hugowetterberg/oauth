@@ -2,13 +2,11 @@
 // $Id$
 
 class DrupalOAuthClient {
-  private $server;
   private $consumer;
   private $requestToken;
   private $accessToken;
 
-  function __construct($server, $consumer, $requestToken=NULL) {
-    $this->server = $server;
+  function __construct($consumer, $requestToken=NULL) {
     $this->consumer = $consumer;
     $this->requestToken = $requestToken;
   }
@@ -26,9 +24,9 @@ class DrupalOAuthClient {
     return $sign;
   }
 
-  public function getRequestToken() {
+  public function getRequestToken($endpoint='/oauth/request_token') {
     if (!$this->requestToken) {
-      $response = $this->get('/oauth/request_token');
+      $response = $this->get($endpoint);
       $params = array();
       parse_str($response, $params);
 
@@ -36,25 +34,33 @@ class DrupalOAuthClient {
         throw new Exception('No valid request token was returned');
       }
 
-      $this->requestToken = new OAuthToken($params['oauth_token'], $params['oauth_token_secret']);
+      $this->requestToken = new DrupalOAuthToken($params['oauth_token'], $params['oauth_token_secret'], array(
+        'type' => 'request',
+        'consumer_key' => $this->consumer->key,
+        'provider_token' => FALSE,
+      ));
     }
 
     return clone $this->requestToken;
   }
 
-  public function getAuthorizationUrl($callback_url=NULL) {
+  public function getAuthorizationUrl($endpoint='/oauth/authorize') {
     $params = array(
       'oauth_token' => $this->requestToken->key,
     );
     if ($callback_url) {
       $params['oauth_callback'] = $callback_url;
     }
-    return $this->server . '/oauth/authorize?' . http_build_query($params, NULL, '&');
+    return $this->consumer->provider_url . $endpoint . '?' . http_build_query($params, NULL, '&');
   }
 
   public function getAccessToken() {
     if (!$this->accessToken) {
-      $response = $this->get('/oauth/access_token', TRUE);
+      $endpoint = $this->consumer->access_endpoint;
+      if (empty($endpoint)) {
+        $endpoint = '/oauth/access_token';
+      }
+      $response = $this->get($endpoint, TRUE);
       $params = array();
       parse_str($response, $params);
 
@@ -62,7 +68,11 @@ class DrupalOAuthClient {
         throw new Exception('No valid access token was returned');
       }
 
-      $this->accessToken = new OAuthToken($params['oauth_token'], $params['oauth_token_secret']);
+      $this->accessToken = new DrupalOAuthToken($params['oauth_token'], $params['oauth_token_secret'], array(
+        'type' => 'access',
+        'consumer_key' => $this->consumer->key,
+        'provider_token' => FALSE,
+      ));
     }
 
     return clone $this->accessToken;
@@ -71,7 +81,7 @@ class DrupalOAuthClient {
   private function get($path, $use_token=FALSE) {
     $token = $use_token ? $this->requestToken : NULL;
     $req = OAuthRequest::from_consumer_and_token($this->consumer, $token,
-      "GET", $this->server . $path);
+      "GET", $this->consumer->provider_url . $path);
     $req->sign_request(self::signatureMethod(), $this->consumer, $token);
 
     $ch = curl_init();

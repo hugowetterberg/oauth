@@ -27,6 +27,21 @@ function _oauth_common_validate_request_callback($type, $unsigned=NULL) {
 }
 
 function _oauth_common_authorized() {
+  // If we have a outh_token we're acting as a consumer and just got authorized
+  if (!empty($_GET['oauth_token'])) {
+    $request_token = DrupalOAuthToken::load($_GET['oauth_token']);
+    if ($request_token) {
+      $consumer_token = DrupalOAuthConsumerToken::load($request_token->consumer_key);
+      $client = new DrupalOAuthClient($consumer_token, $request_token);
+
+      $access_token = $client->getAccessToken();
+      if ($access_token) {
+        $access_token->write();
+        $request_token->delete();
+      }
+      module_invoke_all('oauth_common_authorized', $consumer_token, $access_token, $request_token);
+    }
+  }
   return t('The application has been authorized');
 }
 

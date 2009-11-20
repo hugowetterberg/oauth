@@ -2,7 +2,8 @@
 // $Id$
 
 class DrupalOAuthConsumerToken extends OAuthToken {
-  public $type = '';
+  public $provider_url = '';
+  public $access_endpoint = '';
   public $uid = 0;
   
   public function __construct($key, $secret, $params=array()) {
