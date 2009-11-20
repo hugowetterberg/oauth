@@ -162,7 +162,6 @@ function oauth_common_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('_oauth_common_user_applications_add', 1),
     'access callback' => '_oauth_common_user_access',
-    'access arguments' => array(1, 'oauth register consumers'),
     'file' => 'oauth_common.pages.inc',
     'type' => MENU_CALLBACK,
   );
@@ -297,7 +296,7 @@ function services_oauth_xrds() {
  *  The permission that is needed in addition to edit access on the $user.
  */
 function _oauth_common_user_access($user, $permission) {
-  return user_edit_access($user) && user_access($permission);
+  return user_edit_access($user);
 }
 
 /**
