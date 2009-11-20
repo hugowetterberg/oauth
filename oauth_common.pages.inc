@@ -383,6 +383,15 @@ function _oauth_common_user_applications($form_state, $account) {
   return $form;
 }
 
+function _oauth_common_user_applications_edit($form_state, $user, $consumer_key) {
+  $form['hej'] = array(
+    '#type' => 'item',
+    '#value' => 'hej',
+  );
+
+  return $form;
+}
+
 function _oauth_common_user_applications_submit($form, $form_state) {
   // Send the user to the application creation form
   if ($form_state['clicked_button']['#id']=='edit-create-consumer') {

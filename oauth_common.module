@@ -181,6 +181,15 @@ function oauth_common_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  $menu['user/%user/applications/%/edit'] = array(
+    'title' => 'Edit application',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_oauth_common_user_applications_edit', 1, 3),
+    'access callback' => 'oauth_common_can_create_consumers',
+    'file' => 'oauth_common.pages.inc',
+    'type' => MENU_CALLBACK,
+  );
+
   $menu['user/%user/applications/authorization/%'] = array(
     'title' => 'Edit authorization',
     'page callback' => 'drupal_get_form',
