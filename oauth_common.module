@@ -167,7 +167,7 @@ function oauth_common_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('_oauth_common_user_applications', 1),
     'access callback' => '_oauth_common_user_access',
-    'access arguments' => array(1, 'oauth authorize consumers'),
+    'access arguments' => array(1),
     'file' => 'oauth_common.pages.inc',
     'type' => MENU_LOCAL_TASK,
   );
@@ -176,7 +176,7 @@ function oauth_common_menu() {
     'title' => 'Add application',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('_oauth_common_user_applications_add', 1),
-    'access callback' => '_oauth_common_user_access',
+    'access callback' => 'oauth_common_can_create_consumers',
     'file' => 'oauth_common.pages.inc',
     'type' => MENU_CALLBACK,
   );
@@ -310,8 +310,31 @@ function services_oauth_xrds() {
  * @param string $permission
  *  The permission that is needed in addition to edit access on the $user.
  */
-function _oauth_common_user_access($user, $permission) {
-  return user_edit_access($user);
+function _oauth_common_user_access($user, $permission = NULL) {
+  return user_edit_access($user) && (empty($permission) || user_access($permission));
+}
+
+/**
+ * Deterines if a user has the necessary permissions to create consumers.
+ *
+ * @param object $account
+ *  The user account to check permissions for. Defaults to the currently
+ *  logged in user.
+ * @return bool
+ */
+function oauth_common_can_create_consumers($account = NULL) {
+  global $user;
+  if (!$account) {
+    $account = $user;
+  }
+
+  $can_register_consumers = user_access('oauth register any consumers', $account);
+  if (!$can_register_consumers) {
+    foreach(oauth_common_authorization_contexts() as $context => $levels) {
+      $can_register_consumers = $can_register_consumers || user_access(sprintf('oauth register consumers in %s', $context), $account);
+    }
+  }
+  return $can_register_consumers;
 }
 
 /**

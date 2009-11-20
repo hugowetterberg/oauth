@@ -290,8 +290,14 @@ function _oauth_common_user_applications($form_state, $account) {
       '#value' => $account->uid,
     ),
   );
+  $can_register_consumers = user_access('oauth register any consumers');
+  if (!$can_register_consumers) {
+    foreach(oauth_common_authorization_contexts() as $context => $levels) {
+      $can_register_consumers = $can_register_consumers || user_access(sprintf('oauth register consumers in %s', $context));
+    }
+  }
   $ci = oauth_common_user_consumers($account->uid);
-  if (!empty($ci) || user_access('oauth register consumers')) {
+  if (!empty($ci) || $can_register_consumers) {
     $apps = array(
       '#type' => 'fieldset',
       '#title' => t('Applications'),
@@ -326,7 +332,7 @@ function _oauth_common_user_applications($form_state, $account) {
       }
     }
 
-    if (user_access('oauth register consumers')) {
+    if ($can_register_consumers) {
       $apps['create_consumer'] = array(
         '#type' => 'submit',
         '#value' => 'Add application',
