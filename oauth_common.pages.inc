@@ -313,20 +313,13 @@ function _oauth_common_user_applications($form_state, $account) {
             '#title' => t('Context'),
             '#value' => $consumer->context,
           ),
-          'consumer_key' => array(
+          'edit' => array(
             '#type' => 'item',
-            '#title' => t('Consumer key'),
-            '#value' => $consumer->key,
+            '#value' => l(t('Edit'), 'user/' . $account->uid . '/applications/' . $consumer->key . '/edit'),
           ),
-          'secret' => array(
-            '#type' => 'fieldset',
-            '#collapsible' => TRUE,
-            '#collapsed' => TRUE,
-            '#title' => t('Consumer secret'),
-            'consumer_secret' => array(
-              '#type' => 'item',
-              '#value' => $consumer->secret,
-            ),
+          'delete' => array(
+            '#type' => 'item',
+            '#value' => l(t('Delete'), 'user/' . $account->uid . '/applications/' . $consumer->key . '/delete'),
           ),
         );
       }
@@ -383,20 +376,114 @@ function _oauth_common_user_applications($form_state, $account) {
   return $form;
 }
 
-function _oauth_common_user_applications_edit($form_state, $user, $consumer_key) {
-  $form['hej'] = array(
-    '#type' => 'item',
-    '#value' => 'hej',
-  );
-
-  return $form;
-}
-
 function _oauth_common_user_applications_submit($form, $form_state) {
   // Send the user to the application creation form
   if ($form_state['clicked_button']['#id']=='edit-create-consumer') {
     drupal_goto(sprintf('user/%d/applications/add', $form_state['values']['uid']));
   }
+}
+
+function _oauth_common_user_applications_edit($form_state, $user, $consumer_key) {
+  // Get app info
+  $consumer = DrupalOAuthConsumer::load($consumer_key);
+
+  $form['name'] = array(
+    '#type' => 'item',
+    '#value' => check_plain($consumer->name),
+    '#prefix' => '<h3>',
+    '#suffix' => '</h3>',
+  );
+
+  $form['context'] = array(
+    '#type' => 'item',
+    '#title' => t('Context'),
+    '#value' => check_plain($consumer->context),
+  );
+
+  $form['created'] = array(
+    '#type' => 'item',
+    '#title' => t('Created'),
+    '#value' => format_date($consumer->created, 'medium'),
+  );
+
+  $form['edited'] = array(
+    '#type' => 'item',
+    '#title' => t('Edited'),
+    '#value' => format_date($consumer->changed, 'medium'),
+  );
+
+  $form['consumer_key'] = array(
+    '#type' => 'item',
+    '#title' => t('Consumer key'),
+    '#value' => $consumer->key,
+  );
+
+  $form['consumer_key_send'] = array(
+    '#type' => 'value',
+    '#value' => $consumer->key,
+  );
+
+  $form['consumer_secret'] = array(
+    '#type' => 'item',
+    '#title' => t('Consumer secret'),
+    '#value' => $consumer->secret,
+  );
+
+  $form['callback_url'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Callback URL'),
+    '#default_value' => isset($consumer->callback_url) ? $consumer->callback_url : '',
+  );
+
+  $form['save'] = array(
+    '#type' => 'submit',
+    '#title' => t('Save'),
+    '#default_value' => t('Save'),
+  );
+
+  return $form;
+}
+
+function _oauth_common_user_applications_edit_submit($form, &$form_state) {
+  // Add scheme if missing
+  if (preg_match('/^http:\/\/|https:\/\//', $form_state['values']['callback_url']) === 0) {
+    $form_state['values']['callback_url'] = 'http://' . $form_state['values']['callback_url'];
+  }
+
+  // Remove trailing slash
+  $form_state['values']['callback_url'] = rtrim($form_state['values']['callback_url'], '/');
+
+  $consumer = DrupalOAuthConsumer::load($form_state['values']['consumer_key_send']);
+  $consumer->callback_url = $form_state['values']['callback_url'];
+  $consumer->write(TRUE);
+}
+
+function _oauth_common_user_applications_delete($form_state, $user, $consumer_key) {
+  $consumer = DrupalOAuthConsumer::load($consumer_key);
+  $form = array(
+    'confirm' => array(
+      '#type' => 'item',
+      '#value' => t('Are you sure you want to delete application <strong>!a</strong>?', array('!a' => $consumer->name)),
+    ),
+    'consumer_key' => array(
+      '#type' => 'value',
+      '#value' => $consumer->key,
+    ),
+    'save' => array(
+      '#type' => 'submit',
+      '#title' => t('Delete'),
+      '#default_value' => t('Delete'),
+    ),
+  );
+
+  return $form;
+}
+
+function _oauth_common_user_applications_delete_submit($form, &$form_state) {
+  $consumer = DrupalOAuthConsumer::load($form_state['values']['consumer_key'] );
+  $consumer->delete();
+
+  drupal_goto('user/' . $consumer->uid . '/applications');
 }
 
 function _oauth_common_user_authorization_edit($form_state, $user, $key) {
@@ -610,6 +697,14 @@ function _oauth_common_user_applications_add($form_state, $account) {
 }
 
 function _oauth_common_user_applications_add_submit($form, $form_state) {
+  // Add scheme if missing
+  if (preg_match('/^http:\/\/|https:\/\//', $form_state['values']['callback_url']) === 0) {
+    $form_state['values']['callback_url'] = 'http://' . $form_state['values']['callback_url'];
+  }
+
+  // Remove trailing slash
+  $form_state['values']['callback_url'] = rtrim($form_state['values']['callback_url'], '/');
+
   $v = $form_state['values'];
   $consumer = new DrupalOAuthConsumer(user_password(32), user_password(32), $v['callback_url'], $v);
   $consumer->write();

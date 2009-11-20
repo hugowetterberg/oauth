@@ -190,6 +190,15 @@ function oauth_common_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  $menu['user/%user/applications/%/delete'] = array(
+    'title' => 'Delete application',
+    'page callback' =>'drupal_get_form',
+    'page arguments' => array('_oauth_common_user_applications_delete', 1, 3),
+    'access callback' => 'oauth_common_can_delete_consumer',
+    'file' => 'oauth_common.pages.inc',
+    'type' => MENU_CALLBACK,
+  );
+
   $menu['user/%user/applications/authorization/%'] = array(
     'title' => 'Edit authorization',
     'page callback' => 'drupal_get_form',
@@ -344,6 +353,26 @@ function oauth_common_can_create_consumers($account = NULL) {
     }
   }
   return $can_register_consumers;
+}
+
+/**
+ * Deterines if a user has the necessary permissions to delete a consumer.
+ *
+ * @param object $account
+ *  The user account to check permissions for. Defaults to the currently
+ *  logged in user.
+ * @return bool
+ */
+function oauth_common_can_delete_consumer($consumer, $account = NULL) {
+  global $user;
+  if (!$account) {
+    $account = $user;
+  }
+
+  $can_create = oauth_common_can_create_consumers($account);
+  $consumerobj = DrupalOAuthConsumer::load($consumer);
+
+  return $can_create && ($consumerobj->uid == $account->uid || user_access('administer users', $account));
 }
 
 /**
