@@ -194,9 +194,9 @@ function _oauth_common_authorize_submit(&$form, &$form_state) {
 
   $got_permission = $got_permission || $values['full_access']; // TODO: Full access should be a configurable auth level
 
-  if (isset($parameters['oauth_callback'])) {
+  if (!empty($consumer->callback_url)) {
     // Pick the callback url apart and add the token parameter
-    $callback = parse_url($parameters['oauth_callback']);
+    $callback = parse_url($consumer->callback_url);
     $query = array();
     parse_str($callback['query'], $query);
     $query['oauth_token'] = $token->key;
