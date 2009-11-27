@@ -20,6 +20,7 @@ function oauth_common_autoload_info() {
     'OAuthRequest'    => $lib,
     'OAuthConsumer'   => $lib,
     'OAuthToken'      => $lib,
+    'OAuthUtil'      => $lib,
   );
 }
 
