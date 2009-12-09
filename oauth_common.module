@@ -469,7 +469,7 @@ function oauth_common_authorization_contexts() {
           $level->weight = 0;
         }
 
-        $contexts[$context][$name] = $level;
+        $contexts[$context]['authorization_levels'][$name] = $level;
       }
       uasort($contexts[$context], '_oauth_common_sort_authorization_levels');
     }
@@ -499,7 +499,7 @@ function oauth_common_authorization_levels($context='default') {
   $contexts = oauth_common_authorization_contexts();
   $levels = NULL;
   if (isset($contexts[$context])) {
-    $levels = $contexts[$context];
+    $levels = $contexts[$context]['authorization_levels'];
   }
   return $levels;
 }

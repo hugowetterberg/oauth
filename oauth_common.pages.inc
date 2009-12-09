@@ -62,6 +62,8 @@ function _oauth_common_authorize() {
   }
 
   $consumer = DrupalOAuthConsumer::load($token->consumer_key);
+  $contexts = oauth_common_authorization_contexts();
+  $context = $contexts[$consumer->context];
 
   // Redirect to the right form, or present an error.
   global $user;
@@ -78,9 +80,15 @@ function _oauth_common_authorize() {
       return drupal_access_denied();
     }
 
-    drupal_set_title(t('Authorize !name', array(
-      '!name' => $consumer->name,
-    )));
+    $tvars = array(
+      '!appname' => $consumer->name,
+      '!user' => $user->name,
+      '!appname' => $consumer->name,
+      '!sitename' => variable_get('site_name', ''),
+    );
+
+    $title = !empty($context['title']) ? $context['title'] : 'Authorize !appname';
+    drupal_set_title(t($title, $tvars));
 
     $form = array();
     $form['oauth_parameters'] = array(
@@ -93,27 +101,28 @@ function _oauth_common_authorize() {
       '#value'  => $consumer->key,
     );
 
-    $msgargs = array(
-      '!appname' => $consumer->name,
-      '!sitename' => variable_get('site_name', ''),
-    );
-
+    $message = !empty($context['message']) ? $context['message'] :
+      'The application !appname wants to access !sitename on your behalf, check the permissions that you would like the application to have.';
     $form['message'] = array(
       '#type' => 'item',
-      '#value' => t('The application !appname wants to access !sitename on your behalf, check the permissions that you would like the application to have.', $msgargs),
+      '#value' => t($message, $tvars),
     );
 
+    $message = !empty($context['warning']) ? $context['warning'] :
+      'If you don\'t know what !appname is, or don\'t want to give it access to your content, just click here and we\'ll take you away from this page without granting !appname any access to !sitename.';
     $form['warning'] = array(
       '#type' => 'item',
-      '#value' => l(t('If you don\'t know what !appname is, or don\'t want to give it access to your content, just click here and we\'ll take you away from this page without granting !appname any access to !sitename.', $msgargs), 'oauth/authorization/deny/' . $token->key),
+      '#value' => l(t($warning, $tvars), 'oauth/authorization/deny/' . $token->key),
       '#attributes' => array(
         'class' => 'abort-authorization',
       ),
     );
 
+    $authorization_title = !empty($context['authorization_title']) ? $context['authorization_title'] :
+      'Permissions';
     $form['authorization'] = array(
       '#type' => 'fieldset',
-      '#title' => t('Permissions'),
+      '#title' => t($authorization_title, $tvars),
       '#options' => $auth_levels,
     );
 
@@ -125,7 +134,7 @@ function _oauth_common_authorize() {
       $auth_opt = array(
         '#type' => 'checkbox',
         '#title' => t($level->title, $msgargs),
-        '#description' => t($level->description, $msgargs),
+        '#description' => t($level->description, $tvars),
       );
       $form['authorization']['levels'][$name] = $auth_opt;
     }
