@@ -133,7 +133,7 @@ function _oauth_common_authorize() {
     foreach ($auth_levels as $name => $level) {
       $auth_opt = array(
         '#type' => 'checkbox',
-        '#title' => t($level->title, $msgargs),
+        '#title' => t($level->title, $tvars),
         '#description' => t($level->description, $tvars),
       );
       $form['authorization']['levels'][$name] = $auth_opt;
@@ -542,7 +542,7 @@ function _oauth_common_user_authorization_edit($form_state, $user, $key) {
     '#title' => t('Permissions'),
   );
 
-  oauth_common_permissions_form($form['allowed'], $consumer, $token->services);
+  oauth_common_permissions_form($user, $form['allowed'], $consumer, $token->services);
 
   $form['delete'] = array(
     '#type' => 'item',
@@ -636,26 +636,20 @@ function _oauth_common_user_authorization_delete_submit($form, $form_state) {
   drupal_goto(sprintf('user/%d/applications', $form_state['values']['user']));
 }
 
-function oauth_common_permissions_form(&$form, $consumer, $default_services=array('*')) {
-  $msgargs = array(
+function oauth_common_permissions_form($account, &$form, $consumer, $default_services=array('*')) {
+  $tvars = array(
     '!appname' => $consumer->name,
+    '!user' => $account->name,
     '!sitename' => variable_get('site_name', ''),
   );
 
-  $auth_levels = array_merge(
-    array('*' => (object)array(
-      'title' => t('Full access'),
-      'description' => t('This will give !appname the same permissions that you normally have and will allow it to access the full range of services that !sitename provides.', $msgargs),
-    )), oauth_common_authorization_levels($consumer->context));
-  $form['authorization']['levels'] = array(
-    '#tree' => TRUE,
-  );
+  $auth_levels = oauth_common_authorization_levels($consumer->context);
 
   foreach ($auth_levels as $name => $level) {
     $auth_opt = array(
       '#type' => 'checkbox',
-      '#title' => t($level->title, $msgargs),
-      '#description' => t($level->description, $msgargs),
+      '#title' => t($level->title, $tvars),
+      '#description' => t($level->description, $tvars),
       '#default_value' => in_array($name, $default_services),
     );
     $form['authorization']['levels'][$name] = $auth_opt;
