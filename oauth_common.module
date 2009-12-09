@@ -452,11 +452,11 @@ function oauth_common_authorization_contexts() {
     $res = db_query("SELECT * FROM {oauth_authorization_levels}");
     while ($level = db_fetch_object($res)) {
       $level->from_db = TRUE;
-      $contexts[$level->context][$level->name] = $level;
+      $contexts[$level->context]['authorization_levels'][$level->name] = $level;
     }
 
-    foreach ($contexts as $context => $levels) {
-      foreach ($levels as $name => $level) {
+    foreach ($contexts as $context => $def) {
+      foreach ($def['authorization_levels'] as $name => $level) {
         // Make sure that all authorization levels are objects
         $level = (object)$level;
 
