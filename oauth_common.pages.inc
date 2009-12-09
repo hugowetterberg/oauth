@@ -276,11 +276,26 @@ function _oauth_common_access_token() {
     $req = DrupalOAuthRequest::from_request();
     $access_token = $server->fetch_access_token($req);
 
-    // Store the expiry time if specified by the client
+    $consumer = DrupalOAuthConsumer::load($access_token->consumer_key);
+    $contexts = oauth_common_authorization_contexts();
+    $context = $contexts[$consumer->context];
+
+    // Set the expiry time based on context settings or get parameter
+    $expires = !empty($context['access_token_lifetime']) ? time() + $context['access_token_lifetime'] : 0;
     if ($_GET['expires'] && intval($_GET['expires'])) {
-      $access_token->expires = intval($_GET['expires']);
+      $hint = intval($_GET['expires']);
+      // Only accept more restrictive expiry times
+      if ($expires == 0 || $hint < $expires) {
+        $expires = $hint;
+      }
+    }
+
+    // Store the expiry time if the access token should expire
+    if ($expires) {
+      $access_token->expires = $expires;
       $access_token->write(TRUE);
     }
+
     print $access_token;
   }
   catch (OAuthException $e) {
