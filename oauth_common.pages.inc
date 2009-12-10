@@ -118,38 +118,51 @@ function _oauth_common_authorize() {
       ),
     );
 
-    $authorization_title = !empty($context['authorization_title']) ? $context['authorization_title'] :
-      'Permissions';
-    $form['authorization'] = array(
-      '#type' => 'fieldset',
-      '#title' => t($authorization_title, $tvars),
-      '#options' => $auth_levels,
-    );
-
-    $auth_levels = oauth_common_authorization_levels($consumer->context);
-    $form['authorization']['levels'] = array(
-      '#tree' => TRUE,
-    );
-    foreach ($auth_levels as $name => $level) {
-      $auth_opt = array(
-        '#type' => 'checkbox',
-        '#title' => t($level->title, $tvars),
-        '#description' => t($level->description, $tvars),
+    $disable_selection = !empty($context['disable_auth_level_selection']) && !empty($context['default_authorization_levels']) && $context['disable_auth_level_selection'];
+    if ($disable_selection) {
+      $authorization_title = !empty($context['authorization_title']) ? $context['authorization_title'] :
+        'Permissions';
+      $form['authorization'] = array(
+        '#type' => 'fieldset',
+        '#title' => t($authorization_title, $tvars),
+        '#options' => $auth_levels,
       );
-      $form['authorization']['levels'][$name] = $auth_opt;
+
+      $auth_levels = oauth_common_authorization_levels($consumer->context);
+      $form['authorization']['levels'] = array(
+        '#tree' => TRUE,
+      );
+      foreach ($auth_levels as $name => $level) {
+        $auth_opt = array(
+          '#type' => 'checkbox',
+          '#title' => t($level->title, $tvars),
+          '#description' => t($level->description, $tvars),
+        );
+        $form['authorization']['levels'][$name] = $auth_opt;
+      }
+    }
+    else {
+      $form['authorization']['levels'] = array(
+        '#type' => 'value',
+        '#value' => $context['default_authorization_levels'],
+      );
     }
 
+    $deny_title = !empty($context['deny_access_title']) ? $context['deny_access_title'] :
+      'Deny access';
     $form['deny'] = array(
       '#type'   => 'item',
-      '#value'  => l(t('Deny access'), 'oauth/authorization/deny/' . $token->key),
+      '#value'  => l(t($deny_title), 'oauth/authorization/deny/' . $token->key),
       '#attributes' => array(
         'class' => 'deny-access',
       ),
     );
 
+    $grant_title = !empty($context['grant_access_title']) ? $context['grant_access_title'] :
+      'Grant access';
     $form['confirm'] = array(
       '#type'   => 'submit',
-      '#value'  => t('Grant access'),
+      '#value'  => t($grant_title),
     );
 
     return $form;
