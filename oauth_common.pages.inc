@@ -119,7 +119,7 @@ function _oauth_common_authorize() {
     );
 
     $disable_selection = !empty($context['disable_auth_level_selection']) && !empty($context['default_authorization_levels']) && $context['disable_auth_level_selection'];
-    if ($disable_selection) {
+    if (!$disable_selection) {
       $authorization_title = !empty($context['authorization_title']) ? $context['authorization_title'] :
         'Permissions';
       $form['authorization'] = array(
@@ -143,9 +143,14 @@ function _oauth_common_authorize() {
     }
     else {
       $form['authorization']['levels'] = array(
-        '#type' => 'value',
-        '#value' => $context['default_authorization_levels'],
+        '#tree' => TRUE,
       );
+      foreach ($context['default_authorization_levels'] as $level) {
+        $form['authorization']['levels'][$level] = array(
+          '#type' => 'value',
+          '#value' => $level,
+        );
+      }
     }
 
     $deny_title = !empty($context['deny_access_title']) ? $context['deny_access_title'] :
