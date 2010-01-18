@@ -112,7 +112,7 @@ function _oauth_common_authorize() {
       'If you don\'t know what !appname is, or don\'t want to give it access to your content, just click here and we\'ll take you away from this page without granting !appname any access to !sitename.';
     $form['warning'] = array(
       '#type' => 'item',
-      '#value' => l(t($warning, $tvars), 'oauth/authorization/deny/' . $token->key),
+      '#value' => l(t($message, $tvars), 'oauth/authorization/deny/' . $token->key),
       '#attributes' => array(
         'class' => 'abort-authorization',
       ),
