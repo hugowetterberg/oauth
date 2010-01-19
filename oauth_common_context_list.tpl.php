@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: oauth_common_context_list.tpl.php,v 1.1 2010/01/19 10:43:58 hugowetterberg Exp $
 ?>
 <div class="contexts">
 <?php foreach ($contexts as $context => $levels): ?>
