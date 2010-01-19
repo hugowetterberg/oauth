@@ -7,16 +7,16 @@ class DrupalOAuthClient {
   private $requestToken;
   private $accessToken;
 
-  function __construct($server, $consumer, $requestToken=NULL) {
+  function __construct($server, $consumer, $requestToken = NULL) {
     $this->server = $server;
     $this->consumer = $consumer;
     $this->requestToken = $requestToken;
   }
 
-  public static function signatureMethod() {
+  public static function signatureMethod($method = NULL) {
     static $sign;
-    if(!$sign) {
-      if (in_array('sha512', hash_algos())) {
+    if (!$sign) {
+      if ((empty($method) || $method == 'sha512') && in_array('sha512', hash_algos())) {
         $sign = new OAuthSignatureMethod_HMAC('sha512');
       }
       else {
@@ -26,9 +26,10 @@ class DrupalOAuthClient {
     return $sign;
   }
 
-  public function getRequestToken() {
+  public function getRequestToken($path = NULL, $request_params = array()) {
     if (!$this->requestToken) {
-      $response = $this->get('/oauth/request_token');
+      $path = (empty($path) ? '/oauth/request_token' : $path);
+      $response = $this->get($path, FALSE, $request_params);
       $params = array();
       parse_str($response, $params);
 
@@ -42,19 +43,22 @@ class DrupalOAuthClient {
     return clone $this->requestToken;
   }
 
-  public function getAuthorizationUrl($callback_url=NULL) {
+  public function getAuthorizationUrl($callback_url = NULL, $path = NULL, $request_params = array()) {
+    $path = (empty($path) ? '/oauth/authorize' : $path);
     $params = array(
       'oauth_token' => $this->requestToken->key,
     );
     if ($callback_url) {
       $params['oauth_callback'] = $callback_url;
     }
-    return $this->server . '/oauth/authorize?' . http_build_query($params, NULL, '&');
+    $params = array_merge($params, $request_params);
+    return $this->server . $path . '?' . http_build_query($params, NULL, '&');
   }
 
-  public function getAccessToken() {
+  public function getAccessToken($path = NULL, $request_params = array()) {
     if (!$this->accessToken) {
-      $response = $this->get('/oauth/access_token', TRUE);
+      $path = (empty($path) ? '/oauth/access_token' : $path);
+      $response = $this->get($path, TRUE, $request_params);
       $params = array();
       parse_str($response, $params);
 
@@ -68,10 +72,10 @@ class DrupalOAuthClient {
     return clone $this->accessToken;
   }
 
-  private function get($path, $use_token=FALSE) {
+  public function get($path, $use_token = FALSE, $params = array()) {
     $token = $use_token ? $this->requestToken : NULL;
     $req = OAuthRequest::from_consumer_and_token($this->consumer, $token,
-      "GET", $this->server . $path);
+      "GET", $this->server . $path, $params);
     $req->sign_request(self::signatureMethod(), $this->consumer, $token);
 
     $ch = curl_init();
@@ -89,7 +93,7 @@ class DrupalOAuthClient {
 
     $result = $this->interpretResponse($response);
     if ($result->responseCode != 200) {
-      throw new Exception('Failed to fetch data from url (HTTP response code ' . $result->responseCode . '): ' . $result->responseMessage, $result->responseCode);
+      throw new Exception('Failed to fetch data from url "'. $this->server . $path . '" (HTTP response code ' . $result->responseCode . '): ' . $result->responseMessage, $result->responseCode);
     }
 
     return $result->body;
@@ -109,7 +113,7 @@ class DrupalOAuthClient {
       $obj->responseMessage = trim($matches[2]);
 
       // Handle HTTP/1.1 100 Continue
-      if ($obj->responseCode==100) {
+      if ($obj->responseCode == 100) {
         return $this->interpretResponse($body);
       }
     }
