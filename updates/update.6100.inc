@@ -62,9 +62,8 @@ function _oauth_common_update_6100() {
     'default'     => 'default',
   ));
 
-  // Add the wildcard authorization level as it now is stored in
-  // the database just like the other authorization levels
-  oauth_common_write_authorization_level('*', 'Full access', 'This will give !appname the same permissions that you normally have and will allow it to access the full range of services that !sitename provides.', 'default', -1);
+  // Add the default context
+  oauth_common_install_default_oauth_context();
 
   return $ret;
 }

@@ -4,6 +4,10 @@
 function oauth_common_install() {
   drupal_install_schema('oauth_common');
 
+  oauth_common_install_default_oauth_context();
+}
+
+function oauth_common_install_default_oauth_context() {
   module_load_include('module', 'oauth_common');
 
   // Create default authorization levels
