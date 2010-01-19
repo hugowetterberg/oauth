@@ -1,5 +1,5 @@
 <?php
-// $Id: DrupalOAuthClient.inc,v 1.1 2009/06/23 06:55:59 hugowetterberg Exp $
+// $Id: DrupalOAuthClient.inc,v 1.2 2010/01/19 10:01:22 hugowetterberg Exp $
 
 class DrupalOAuthClient {
   private $server;
