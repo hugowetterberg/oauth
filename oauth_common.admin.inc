@@ -31,6 +31,86 @@ function _oauth_common_admin_settings_validate($form, $form_state) {
   }
 }
 
+/**
+ * Output a list of contexts.
+ */
+function oauth_common_list_context($js = NULL) {
+  $header = array(
+    array('data' => t('Title'),          'class' => 'oauth-common-contexts-title'),
+    array('data' => t('Storage'),        'class' => 'oauth-common-contexts-storage'),
+    array('data' => t('Operations'),     'class' => 'oauth-common-contexts-operations'),
+  );
+
+  $contexts = oauth_common_context_load_all();
+  $rows = array();
+
+  foreach ($contexts as $context) {
+    $operations = array();
+
+    if (empty($context->disabled)) {
+      $operations[] = array(
+        'title' => t('Edit'),
+        'href'  => 'admin/settings/oauth/contexts/' . $context->name . '/edit',
+      );
+      $operations[] = array(
+        'title' => t('Export'),
+        'href'  => 'admin/settings/oauth/contexts/' . $context->name . '/export',
+      );
+    }
+
+    if ($context->export_type == (EXPORT_IN_CODE | EXPORT_IN_DATABASE)) {
+      $operations[] = array(
+        'title' => t('Revert'),
+        'href'  => 'admin/settings/oauth/contexts/' . $context->name . '/delete',
+      );
+    }
+    elseif ($context->export_type != EXPORT_IN_CODE) {
+      $operations[] = array(
+        'title' => t('Delete'),
+        'href'  => 'admin/settings/oauth/contexts/' . $context->name . '/delete',
+      );
+    }
+    elseif (empty($context->disabled)) {
+      $operations[] = array(
+        'title' => t('Disable'),
+        'href'  => 'admin/settings/oauth/contexts/' . $context->name . '/disable',
+        'query' => drupal_get_destination(),
+      );
+    }
+    else {
+      $operations[] = array(
+        'title' => t('Enable'),
+        'href'  => 'admin/settings/oauth/contexts/' . $context->name . '/enable',
+        'query' => drupal_get_destination(),
+      );
+    }
+
+    $rows[$context->name] = array(
+      'data' => array(
+        'title' => array(
+          'data'  => $context->title,
+          'class' => 'oauth-common-contexts-title',
+        ),
+        'storage' => array(
+          'data'  => ($context->export_type == EXPORT_IN_CODE) ? t('In code') : t('In database'),
+          'class' => 'oauth-common-contexts-storage',
+        ),
+        'operations' => array(
+          'data'  => theme('links', $operations),
+          'class' => 'oauth-common-contexts-operations',
+        ),
+      ),
+      'class' => 'oauth-common-contexts-' . $context->name . (!empty($context->disabled) ? ' oauth-common-contexts-disabled' : ''),
+    );
+  }
+
+  $table = theme('table', $header, $rows, array('id' => 'services-list-contexts'));
+
+  drupal_add_css(drupal_get_path('module', 'services') . '/css/services.admin.css');
+
+  return $table;
+}
+
 function _oauth_common_admin_contexts() {
   $contexts = oauth_common_authorization_contexts();
   return theme('oauth_common_context_list', $contexts);

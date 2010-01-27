@@ -3,5 +3,6 @@ name = OAuth Common
 description = Provides common OAuth functionality
 dependencies[] = autoload
 dependencies[] = inputstream
+dependencies[] = ctools
 core = 6.x
 php = 5.2
