@@ -5,28 +5,69 @@ class DrupalOAuthClient {
   private $consumer;
   private $requestToken;
   private $accessToken;
+  private $signatureMethod;
 
-  function __construct($consumer, $requestToken=NULL) {
+  /**
+   * Creates an instance of the DrupalOAuthClient.
+   *
+   * @param DrupalOAuthConsumerToken $consumer
+   *  The consumer token.
+   * @param OAuthToken $request_token
+   *  Optional. A request token to use.
+   * @param OAuthSignatureMethod $signature_method
+   *  Optional. The signature method to use.
+   * @author Hugo Wetterberg
+   */
+  function __construct($consumer, $request_token = NULL, $signature_method = NULL) {
     $this->consumer = $consumer;
     $this->requestToken = $requestToken;
+    $this->signatureMethod = $signature_method;
+
+    // Set to the default signature method if no method was specified
+    if (!$this->signatureMethod) {
+      $this->signatureMethod = self::signatureMethod();
+    }
   }
 
-  public static function signatureMethod() {
-    static $sign;
-    if(!$sign) {
-      if (in_array('sha512', hash_algos())) {
-        $sign = new OAuthSignatureMethod_HMAC('sha512');
-      }
-      else {
-        $sign = new OAuthSignatureMethod_HMAC_SHA1();
-      }
+  /**
+   * Convenience function to get signing method implementations.
+   *
+   * @param string $method
+   *  Optional. The hmac hashing algorithm to use. Defaults to 'sha512' which
+   *  has superseded sha1 as the recommended alternative.
+   * @param bool $fallback_to_sha1
+   *  Optional. Whether sha1 should be used as a fallback if the selected
+   *  hashing algorithm is unavailable.
+   * @return OAuthSignatureMethod
+   *  The signature method object.
+   */
+  public static function signatureMethod($method = 'sha512', $fallback_to_sha1 = TRUE) {
+    $sign = NULL;
+
+    if (in_array($method, hash_algos())) {
+      $sign = new OAuthSignatureMethod_HMAC($method);
     }
+    else if ($fallback_to_sha1) {
+      $sign = new OAuthSignatureMethod_HMAC_SHA1();
+    }
+
     return $sign;
   }
 
-  public function getRequestToken($endpoint='/oauth/request_token') {
+  /**
+   * Gets a request token from the provider.
+   *
+   * @param string $endpoint
+   *  Optional. The endpoint path for the provider. Defaults to
+   *  '/oauth/request_token'.
+   * @param array $request_params
+   *  Optional. A set of parameters to pass to the provider.
+   * @return DrupalOAuthToken
+   *  The returned request token.
+   */
+  public function getRequestToken($endpoint = '/oauth/request_token', $request_params = array()) {
     if (!$this->requestToken) {
-      $response = $this->get($endpoint);
+      $response = $this->get($endpoint, FALSE, $request_params);
       $params = array();
       parse_str($response, $params);
 
@@ -44,23 +85,51 @@ class DrupalOAuthClient {
     return clone $this->requestToken;
   }
 
-  public function getAuthorizationUrl($endpoint='/oauth/authorize') {
-    $params = array(
+  /**
+   * Constructs the url that the user should be sent to to authorize the
+   * request token.
+   *
+   * @param string $callback_url
+   *  Optional. The url the user should be sent to after the request token has
+   *  been authorized.
+   * @param string $endpoint
+   *  Optional. The endpoint path for the provider. Defaults to
+   *  '/oauth/authorize'.
+   * @param array $request_params
+   *  Optional. Parameters to send to the provider.
+   * @return string
+   *  The url.
+   */
+  public function getAuthorizationUrl($callback_url = NULL, $endpoint = '/oauth/authorize', $request_params = array()) {
+    $params = array_merge($request_params, array(
       'oauth_token' => $this->requestToken->key,
-    );
+    ));
     if ($callback_url) {
       $params['oauth_callback'] = $callback_url;
     }
     return $this->consumer->provider_url . $endpoint . '?' . http_build_query($params, NULL, '&');
   }
 
-  public function getAccessToken() {
+  /**
+   * Fetches the access token using the request token.
+   *
+   * @param string $endpoint
+   *  Optional. The endpoint path for the provider. Defaults to
+   *  the default access_endpoint for the $consumer.
+   * @param string $request_params
+   *  Optional. Parameters to send to the provider.
+   * @return DrupalOAuthToken
+   *  The access token.
+   */
+  public function getAccessToken($endpoint = NULL, $request_params = array()) {
     if (!$this->accessToken) {
-      $endpoint = $this->consumer->access_endpoint;
+      if (empty($endpoint)) {
+        $endpoint = $this->consumer->access_endpoint;
+      }
       if (empty($endpoint)) {
         $endpoint = '/oauth/access_token';
       }
-      $response = $this->get($endpoint, TRUE);
+      $response = $this->get($endpoint, TRUE, $request_params);
       $params = array();
       parse_str($response, $params);
 
@@ -78,10 +147,10 @@ class DrupalOAuthClient {
     return clone $this->accessToken;
   }
 
-  private function get($path, $use_token=FALSE) {
+  private function get($path, $use_token = FALSE, $params = array()) {
     $token = $use_token ? $this->requestToken : NULL;
     $req = OAuthRequest::from_consumer_and_token($this->consumer, $token,
-      "GET", $this->consumer->provider_url . $path);
+      "GET", $this->consumer->provider_url . $path, $params);
     $req->sign_request(self::signatureMethod(), $this->consumer, $token);
 
     $ch = curl_init();
@@ -99,7 +168,7 @@ class DrupalOAuthClient {
 
     $result = $this->interpretResponse($response);
     if ($result->responseCode != 200) {
-      throw new Exception('Failed to fetch data from url (HTTP response code ' . $result->responseCode . '): ' . $result->responseMessage, $result->responseCode);
+      throw new Exception('Failed to fetch data from url "' . $this->consumer->provider_url . $path . '" (HTTP response code ' . $result->responseCode . '): ' . $result->responseMessage, $result->responseCode);
     }
 
     return $result->body;
@@ -119,7 +188,7 @@ class DrupalOAuthClient {
       $obj->responseMessage = trim($matches[2]);
 
       // Handle HTTP/1.1 100 Continue
-      if ($obj->responseCode==100) {
+      if ($obj->responseCode == 100) {
         return $this->interpretResponse($body);
       }
     }

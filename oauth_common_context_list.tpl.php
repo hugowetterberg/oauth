@@ -10,7 +10,17 @@
       <li><?php print $level->title ?></li>
     <?php endforeach ?>
     </ul>
-    <a class="edit-context" href="<?php print url('admin/settings/oauth/' . $context . '/authorizations') ?>">Edit <?php print $context ?></a>
+    <?php
+      print l(t('Edit @context', array(
+          '@context' => $context,
+        )),
+        'admin/settings/oauth/' . $context . '/authorizations',
+        array(
+          'attributes' => array(
+            'class' => 'edit-context',
+          ),
+        ));
+    ?>
   </div>
 <?php endforeach ?>
 </div>

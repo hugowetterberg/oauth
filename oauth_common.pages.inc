@@ -81,13 +81,13 @@ function _oauth_common_authorize() {
     }
 
     $tvars = array(
-      '!appname' => $consumer->name,
-      '!user' => $user->name,
-      '!appname' => $consumer->name,
-      '!sitename' => variable_get('site_name', ''),
+      '@appname' => $consumer->name,
+      '@user' => $user->name,
+      '@appname' => $consumer->name,
+      '@sitename' => variable_get('site_name', ''),
     );
 
-    $title = !empty($context['title']) ? $context['title'] : 'Authorize !appname';
+    $title = !empty($context['title']) ? $context['title'] : 'Authorize @appname';
     drupal_set_title(t($title, $tvars));
 
     $form = array();
@@ -102,17 +102,17 @@ function _oauth_common_authorize() {
     );
 
     $message = !empty($context['message']) ? $context['message'] :
-      'The application !appname wants to access !sitename on your behalf, check the permissions that you would like the application to have.';
+      'The application @appname wants to access @sitename on your behalf, check the permissions that you would like the application to have.';
     $form['message'] = array(
       '#type' => 'item',
       '#value' => t($message, $tvars),
     );
 
     $message = !empty($context['warning']) ? $context['warning'] :
-      'If you don\'t know what !appname is, or don\'t want to give it access to your content, just click here and we\'ll take you away from this page without granting !appname any access to !sitename.';
+      'If you don\'t know what @appname is, or don\'t want to give it access to your content, just click here and we\'ll take you away from this page without granting @appname any access to @sitename.';
     $form['warning'] = array(
       '#type' => 'item',
-      '#value' => l(t($warning, $tvars), 'oauth/authorization/deny/' . $token->key),
+      '#value' => l(t($message, $tvars), 'oauth/authorization/deny/' . $token->key),
       '#attributes' => array(
         'class' => 'abort-authorization',
       ),
@@ -348,7 +348,7 @@ function _oauth_common_user_applications($form_state, $account) {
     if (!empty($ci)) {
       foreach ($ci as $consumer) {
         $apps[$consumer->key] = array(
-          '#prefix' => '<div class="consumer-application"><h3>' . $consumer->name . '</h3>',
+          '#prefix' => '<div class="consumer-application"><h3>' . check_plain($consumer->name) . '</h3>',
           '#suffix' => '</div>',
           'context' => array(
             '#type' => 'item',
@@ -397,7 +397,7 @@ function _oauth_common_user_applications($form_state, $account) {
         'consumer_name' => array(
           '#type' => 'item',
           '#title' => t('Application'),
-          '#value' => $consumer->name,
+          '#value' => check_plain($consumer->name),
         ),
         'access_key' => array(
           '#type' => 'item',
@@ -505,7 +505,7 @@ function _oauth_common_user_applications_delete($form_state, $user, $consumer_ke
   $form = array(
     'confirm' => array(
       '#type' => 'item',
-      '#value' => t('Are you sure you want to delete application <strong>!a</strong>?', array('!a' => $consumer->name)),
+      '#value' => t('Are you sure you want to delete application <strong>@a</strong>?', array('@a' => $consumer->name)),
     ),
     'consumer_key' => array(
       '#type' => 'value',
@@ -534,7 +534,7 @@ function _oauth_common_user_authorization_edit($form_state, $user, $key) {
   $token = DrupalOAuthToken::load($key);
   $consumer = DrupalOAuthConsumer::load($token->consumer_key);
 
-  drupal_set_title(t('Authorization for !app', array('!app' => $consumer->name)));
+  drupal_set_title(t('Authorization for @app', array('@app' => $consumer->name)));
 
   $form['user'] = array(
     '#type' => 'value',
@@ -608,9 +608,9 @@ function _oauth_common_user_authorization_edit_submit($form, $form_state) {
   $token->authorized = $values['authorized'];
   $token->write(TRUE);
 
-  drupal_set_message(t('The !consumer token !token was updated.', array(
-    '!consumer' => $consumer->name,
-    '!token' => $token->key)));
+  drupal_set_message(t('The @consumer token @token was updated.', array(
+    '@consumer' => $consumer->name,
+    '@token' => $token->key)));
   drupal_goto(sprintf('user/%d/applications', $form_state['values']['user']));
 }
 
@@ -618,8 +618,8 @@ function _oauth_common_user_authorization_delete($form_state, $user, $key) {
   $token = DrupalOAuthToken::load($key);
   $consumer = DrupalOAuthConsumer::load($token->consumer_key);
 
-  drupal_set_title(t('Deleting authorization for "!title"', array(
-    '!title' => $consumer->name,
+  drupal_set_title(t('Deleting authorization for "@title"', array(
+    '@title' => $consumer->name,
   )));
 
   $form = array(
@@ -641,8 +641,8 @@ function _oauth_common_user_authorization_delete($form_state, $user, $key) {
 
   $form['description'] = array(
     '#type' => 'item',
-    '#value' => t('Are you sure that you want to delete the authorization for !name?', array(
-      '!name' => $consumer->name,
+    '#value' => t('Are you sure that you want to delete the authorization for @name?', array(
+      '@name' => $consumer->name,
     )),
   );
 
@@ -663,17 +663,17 @@ function _oauth_common_user_authorization_delete_submit($form, $form_state) {
   $token = DrupalOAuthToken::load($form_state['values']['key']);
   $consumer = DrupalOAuthConsumer::load($token->consumer_key);
   $token->delete();
-  drupal_set_message(t('The !consumer token !token was deleted.', array(
-    '!consumer' => $consumer->name,
-    '!token' => $token->key)));
+  drupal_set_message(t('The @consumer token @token was deleted.', array(
+    '@consumer' => $consumer->name,
+    '@token' => $token->key)));
   drupal_goto(sprintf('user/%d/applications', $form_state['values']['user']));
 }
 
 function oauth_common_permissions_form($account, &$form, $consumer, $default_services=array('*')) {
   $tvars = array(
-    '!appname' => $consumer->name,
-    '!user' => $account->name,
-    '!sitename' => variable_get('site_name', ''),
+    '@appname' => $consumer->name,
+    '@user' => $account->name,
+    '@sitename' => variable_get('site_name', ''),
   );
 
   $auth_levels = oauth_common_authorization_levels($consumer->context);
@@ -745,6 +745,6 @@ function _oauth_common_user_applications_add_submit($form, $form_state) {
   $consumer = new DrupalOAuthConsumer(user_password(32), user_password(32), $v['callback_url'], $v);
   $consumer->write();
 
-  drupal_set_message(t('Added the application !name', array('!name' => $v['name'])));
+  drupal_set_message(t('Added the application @name', array('@name' => $v['name'])));
   drupal_goto(sprintf('user/%d/applications', $v['uid']));
 }
