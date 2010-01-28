@@ -3,7 +3,7 @@
 
 function _oauth_common_admin() {
   $form = array();
-  
+
   $form['oauth_common_enable_provider'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable the oauth provider'),
@@ -50,37 +50,37 @@ function oauth_common_list_context($js = NULL) {
     if (empty($context->disabled)) {
       $operations[] = array(
         'title' => t('Edit'),
-        'href'  => 'admin/settings/oauth/contexts/' . $context->name . '/edit',
+        'href'  => 'admin/settings/oauth/' . $context->name . '/edit',
       );
       $operations[] = array(
         'title' => t('Export'),
-        'href'  => 'admin/settings/oauth/contexts/' . $context->name . '/export',
+        'href'  => 'admin/settings/oauth/' . $context->name . '/export',
       );
     }
 
     if ($context->export_type == (EXPORT_IN_CODE | EXPORT_IN_DATABASE)) {
       $operations[] = array(
         'title' => t('Revert'),
-        'href'  => 'admin/settings/oauth/contexts/' . $context->name . '/delete',
+        'href'  => 'admin/settings/oauth/' . $context->name . '/delete',
       );
     }
     elseif ($context->export_type != EXPORT_IN_CODE) {
       $operations[] = array(
         'title' => t('Delete'),
-        'href'  => 'admin/settings/oauth/contexts/' . $context->name . '/delete',
+        'href'  => 'admin/settings/oauth/' . $context->name . '/delete',
       );
     }
     elseif (empty($context->disabled)) {
       $operations[] = array(
         'title' => t('Disable'),
-        'href'  => 'admin/settings/oauth/contexts/' . $context->name . '/disable',
+        'href'  => 'admin/settings/oauth/' . $context->name . '/disable',
         'query' => drupal_get_destination(),
       );
     }
     else {
       $operations[] = array(
         'title' => t('Enable'),
-        'href'  => 'admin/settings/oauth/contexts/' . $context->name . '/enable',
+        'href'  => 'admin/settings/oauth/' . $context->name . '/enable',
         'query' => drupal_get_destination(),
       );
     }
@@ -104,16 +104,215 @@ function oauth_common_list_context($js = NULL) {
     );
   }
 
-  $table = theme('table', $header, $rows, array('id' => 'services-list-contexts'));
-
-  drupal_add_css(drupal_get_path('module', 'services') . '/css/services.admin.css');
+  $table = theme('table', $header, $rows, array('id' => 'oauth-common-list-contexts'));
 
   return $table;
 }
 
-function _oauth_common_admin_contexts() {
-  $contexts = oauth_common_authorization_contexts();
-  return theme('oauth_common_context_list', $contexts);
+/**
+ * Handle the add context page.
+ */
+function oauth_common_add_context() {
+  $context = oauth_common_context_new();
+  drupal_set_title(t('Add context'));
+  return oauth_common_edit_context($context);
+}
+
+/**
+ * Edit an context.
+ *
+ * Called from both the add and edit points to provide for common flow.
+ */
+function oauth_common_edit_context($context) {
+  if (!is_object($context)) {
+    $context = oauth_common_context_load($context);
+  }
+  if ($context && !empty($context->title)) {
+    drupal_set_title(check_plain($context->title));
+  }
+  return drupal_get_form('oauth_common_edit_form_context', $context);
+}
+
+/**
+ * Form to edit the settings of an context.
+ */
+function oauth_common_edit_form_context(&$form_state, $context) {
+  $form = array();
+
+  $form['cid'] = array(
+    '#type'  => 'value',
+    '#value' => isset($context->cid) ? $context->cid : '',
+  );
+
+  $form['context_object'] = array(
+    '#type'  => 'value',
+    '#value' => $context,
+  );
+
+  $form['name'] = array(
+    '#type'          => 'textfield',
+    '#size'          => 24,
+    '#maxlength'     => 255,
+    '#default_value' => $context->name,
+    '#title'         => t('Context name'),
+    '#description'   => t('A unique name used to identify this preset internally. It must be only be alpha characters and underscores. No spaces, numbers or uppercase characters.'),
+    '#required'      => TRUE,
+  );
+
+  $form['title'] = array(
+    '#type'          => 'textfield',
+    '#size'          => 24,
+    '#maxlength'     => 255,
+    '#default_value' => $context->title,
+    '#title'         => t('Context title'),
+    '#required'      => TRUE,
+  );
+
+  $form['authorization_options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Authorization options'),
+    '#tree' => TRUE,
+  );
+
+  $sign_methods = array(
+    'PLAINTEXT' => t('Plaintext'),
+    'PLAINTEXT-SSL' => t('Plaintext (if https)'),
+  );
+  foreach (hash_algos() as $algo) {
+    $sign_methods['HMAC-' . strtoupper($algo)] = 'HMAC-' . strtoupper($algo);
+  }
+
+  $form['authorization_options']['signature_methods'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Signature methods'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    'selected' => array(
+      '#type' => 'checkboxes',
+      '#title' => t('Supported signature methods'),
+      '#options' => $sign_methods,
+      '#default_value' => !empty($context->authorization_options['signature_methods']) ?
+         $context->authorization_options['signature_methods']:
+         array('PLAINTEXT-SSL', 'HMAC-SHA1', 'HMAC-SHA256', 'HMAC-SHA384', 'HMAC-SHA512', 'HMAC-CRC32'),
+    )
+  );
+
+  $form['authorization_options']['page_title'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Page title'),
+    '#description' => t('The title of the authorization page.'),
+    '#size' => 40,
+    '#maxlength' => 255,
+    '#default_value' => $context->authorization_options['page_title'],
+  );
+
+  $form['authorization_options']['message'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Message'),
+    '#description' => t('The message shown to the user when authorizing.'),
+    '#default_value' => $context->authorization_options['message'],
+  );
+
+  $form['authorization_options']['warning'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Warning'),
+    '#description' => t('The warning shown to the user when authorizing.'),
+    '#default_value' => $context->authorization_options['warning'],
+  );
+
+  $form['authorization_options']['warning'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Warning'),
+    '#description' => t('The warning shown to the user when authorizing.'),
+    '#default_value' => $context->authorization_options['warning'],
+  );
+
+  $form['authorization_levels'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Authorization levels'),
+    '#tree' => TRUE,
+  );
+
+  foreach ($context->authorization_levels as $name => $level) {
+    $form['authorization_levels'][] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Level'),
+      'name' => array(
+        '#type' => 'textfield',
+        '#title' => t('Name'),
+        '#description' => t('The name of the authorization level.'),
+        '#size' => 40,
+        '#maxlength' => 255,
+        '#default_value' => $name,
+      ),
+      'title' => array(
+        '#type' => 'textfield',
+        '#title' => t('Title'),
+        '#description' => t('The title of the authorization level.'),
+        '#size' => 40,
+        '#maxlength' => 255,
+        '#default_value' => $level['title'],
+      ),
+      'default' => array(
+        '#type' => 'textfield',
+        '#title' => t('Selected by default'),
+        '#description' => t('Whether the authentication level should be checked by default.'),
+        '#size' => 40,
+        '#maxlength' => 255,
+        '#default_value' => $level['title'],
+      ),
+    );
+  }
+
+  $form['submit'] = array(
+    '#type'  => 'submit',
+    '#value' => t('Save'),
+  );
+
+  return $form;
+}
+
+/**
+ * Validate submission of the preset edit form.
+ */
+function oauth_common_edit_form_context_validate($form, &$form_state) {
+  // Test uniqueness of name:
+  if (preg_match("/[^A-Za-z0-9_]/", $form_state['values']['context'])) {
+    form_error($form['name'], t('Endpoint name must be alphanumeric or underscores only.'));
+  }
+  else {
+    $query = "SELECT cid FROM {oauth_common_context} WHERE name = '%s'";
+    $args  = array($form_state['values']['context']);
+    if (!empty($form_state['values']['cid']) && is_numeric($form_state['values']['cid'])) {
+      $query .= ' AND cid != %d';
+      $args[] = $form_state['values']['cid'];
+    }
+    if (db_result(db_query($query, $args))) {
+      form_error($form['name'], t('Context name must be unique.'));
+    }
+  }
+}
+
+/**
+ * Process submission of the mini panel edit form.
+ */
+function oauth_common_edit_form_context_submit($form, &$form_state) {
+  $context = $form_state['values']['context_object'];
+
+  $context->name = $form_state['values']['name'];
+  $context->title = $form_state['values']['title'];
+
+  if (empty($context->cid)) {
+    drupal_set_message(t('Your new context %title has been saved.', array('%title' => $context->title)));
+    oauth_common_context_save($context);
+    $form_state['values']['cid'] = $context->cid;
+  }
+  else {
+    drupal_set_message(t('Your changes have been saved.'));
+    oauth_common_context_save($context);
+  }
+
+  $form_state['redirect'] = 'admin/build/oauth_common/list';
 }
 
 /**
@@ -122,7 +321,7 @@ function _oauth_common_admin_contexts() {
  *
  * @param string $context
  *  The context whose authorization levels should be administered.
- * 
+ *
  * @return array
  *  A form array.
  */

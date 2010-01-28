@@ -14,6 +14,7 @@ function oauth_common_autoload_info() {
     'DrupalOAuthConsumerToken'  => array('file' => 'includes/DrupalOAuthConsumerToken.inc'),
     'DrupalOAuthConsumer'       => array('file' => 'includes/DrupalOAuthConsumer.inc'),
     'OAuthSignatureMethod_HMAC' => array('file' => 'includes/OAuthSignatureMethod_HMAC.inc'),
+    'OAuthSignatureMethod_PLAINTEXT_SSL' => array('file' => 'includes/OAuthSignatureMethod_PLAINTEXT_SSL.inc'),
     'DrupalOAuthClient'         => array('file' => 'includes/DrupalOAuthClient.inc'),
     'OAuthServer'     => $lib,
     'OAuthDataStore'  => $lib,
@@ -78,39 +79,42 @@ function oauth_common_menu() {
 
   $menu['admin/settings/oauth'] = array(
     'title' => 'OAuth',
-    'description' => 'Settings for OAuth',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('_oauth_common_admin'),
+    'description' => 'The different context for authorization',
+    'page callback' => 'oauth_common_list_context',
     'type' => MENU_NORMAL_ITEM,
   ) + $admin_base;
-
-  $menu['admin/settings/oauth/general'] = array(
-    'title' => 'Settings',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => -10,
-  ) + $menu['admin/settings/oauth'];
 
   $menu['admin/settings/oauth/list'] = array(
     'title' => 'Contexts',
     'description' => 'The different context for authorization',
     'page callback' => 'oauth_common_list_context',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  ) + $menu['admin/settings/oauth'];
+
+  $menu['admin/settings/oauth/settings'] = array(
+    'title' => 'Settings',
+    'description' => 'Settings for OAuth',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_oauth_common_admin'),
     'type' => MENU_LOCAL_TASK,
+    'weight' => 5,
   ) + $admin_base;
 
-  $items['admin/settings/oauth/add'] = array(
+  $menu['admin/settings/oauth/add'] = array(
     'title'          => 'Add context',
     'page callback'  => 'oauth_common_add_context',
     'type'           => MENU_LOCAL_TASK,
+    'weight'         => 10,
   ) + $admin_base;
 
-  $items['admin/settings/oauth/%oauth_common_context/edit'] = array(
+  $menu['admin/settings/oauth/%oauth_common_context/edit'] = array(
     'title'          => 'Edit context',
     'page callback'  => 'oauth_common_edit_context',
     'page arguments' => array(3),
     'type'           => MENU_LOCAL_TASK,
   ) + $admin_base;
 
-  $items['admin/settings/oauth/%oauth_common_context/export'] = array(
+  $menu['admin/settings/oauth/%oauth_common_context/export'] = array(
     'title'          => 'Export context',
     'page callback'  => 'drupal_get_form',
     'page arguments' => array('oauth_common_export_context', 3),
@@ -118,20 +122,20 @@ function oauth_common_menu() {
     'weight'         => 20,
   ) + $admin_base;
 
-  $items['admin/settings/oauth/%oauth_common_context/delete'] = array(
+  $menu['admin/settings/oauth/%oauth_common_context/delete'] = array(
     'title'          => 'Delete context',
     'page callback'  => 'drupal_get_form',
     'page arguments' => array('oauth_common_delete_confirm_context', 3),
     'type'           => MENU_CALLBACK,
   ) + $admin_base;
 
-  $items['admin/settings/oauth/%oauth_common_context/disable'] = array(
+  $menu['admin/settings/oauth/%oauth_common_context/disable'] = array(
     'page callback'  => 'oauth_common_context',
     'page arguments' => array(3),
     'type'           => MENU_CALLBACK,
   ) + $admin_base;
 
-  $items['admin/settings/oauth/%oauth_common_context/enable'] = array(
+  $menu['admin/settings/oauth/%oauth_common_context/enable'] = array(
     'page callback'  => 'oauth_common_enable_context',
     'page arguments' => array(3),
     'type'           => MENU_CALLBACK,
