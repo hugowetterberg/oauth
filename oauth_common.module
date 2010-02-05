@@ -523,6 +523,34 @@ function oauth_common_context_load($name) {
 }
 
 /**
+ * Loads the context for a request.
+ *
+ * @param OAuthRequest $request
+ * @return object
+ *  The context configuration.
+ */
+function oauth_common_context_from_request($request) {
+  $context = NULL;
+  $consumer_key = $request->get_parameter('oauth_consumer_key');
+  $token_key = $request->get_parameter('oauth_token');
+
+  if (empty($consumer_key) && !empty($token_key)) {
+    $token = DrupalOAuthToken::load($token_key, TRUE);
+    if ($token) {
+      $consumer_key = $token->consumer_key;
+    }
+  }
+  if (!empty($consumer_key)) {
+    $consumer = DrupalOAuthConsumer::load($consumer_key);
+  }
+
+  if ($consumer) {
+    $context = oauth_common_context_load($consumer->context);
+  }
+  return $context;
+}
+
+/**
  * Load all contexts.
  *
  * @return array
