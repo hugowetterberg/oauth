@@ -16,9 +16,8 @@ class DrupalOAuthClient {
    *  Optional. A request token to use.
    * @param OAuthSignatureMethod $signature_method
    *  Optional. The signature method to use.
-   * @author Hugo Wetterberg
    */
-  function __construct($consumer, $request_token = NULL, $signature_method = NULL) {
+  public function __construct($consumer, $request_token = NULL, $signature_method = NULL) {
     $this->consumer = $consumer;
     $this->requestToken = $requestToken;
     $this->signatureMethod = $signature_method;

@@ -52,20 +52,24 @@ function oauth_common_verify_request() {
   // Verify
   $consumer = $req->get_parameter('oauth_consumer_key');
   if (!empty($consumer)) {
-    _oauth_common_verify_body_hash($req);
+    $consumer = DrupalOAuthConsumer::load($consumer_key);
+    if ($consumer) {
+      $context = oauth_common_context_load($consumer->context);
+      _oauth_common_verify_body_hash($req);
 
-    // Only verify request if we got a signature
-    $signature = $req->get_parameter('oauth_signature');
-    if (!empty($signature)) {
-      $server = new DrupalOAuthServer();
-      return array_merge(array(TRUE), $server->verify_request($req));
-    }
-    else {
-      $token_key = $req->get_parameter('oauth_token');
-      if (empty($token_key) || !($token=DrupalOAuthToken::load($token_key))) {
-        $token = NULL;
+      // Only verify request if we got a signature
+      $signature = $req->get_parameter('oauth_signature');
+      if (!empty($signature)) {
+        $server = new DrupalOAuthServer($context);
+        return array_merge(array(TRUE), $server->verify_request($req));
       }
-      return array(FALSE, DrupalOAuthConsumer::load($consumer), $token);
+      else {
+        $token_key = $req->get_parameter('oauth_token');
+        if (empty($token_key) || !($token=DrupalOAuthToken::load($token_key, TRUE))) {
+          $token = NULL;
+        }
+        return array(FALSE, DrupalOAuthConsumer::load($consumer), $token);
+      }
     }
   }
   return array(FALSE, NULL,NULL);

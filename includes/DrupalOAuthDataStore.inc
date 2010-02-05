@@ -5,6 +5,12 @@
 * Database abstraction class
 */
 class DrupalOAuthDataStore extends OAuthDataStore {
+  private $context;
+
+  public function __construct($context) {
+    $this->construct = $construct;
+  }
+
   /**
    * Check if consumer exists from a given consumer key.
    *
@@ -17,7 +23,7 @@ class DrupalOAuthDataStore extends OAuthDataStore {
    * @throws OAuthException
    *  An exception is thrown when the consumer cannot be found
    */
-  function lookup_consumer($consumer_key, $provider_consumer=TRUE) {
+  public function lookup_consumer($consumer_key, $provider_consumer=TRUE) {
     $consumer = DrupalOAuthConsumer::load($consumer_key);
     if ($consumer && $consumer->provider_consumer==$provider_consumer) {
       return $consumer;
@@ -41,8 +47,8 @@ class DrupalOAuthDataStore extends OAuthDataStore {
    * @throws OAuthException
    *  An exception is thrown when the token cannot be found or doesn't match
    */
-  function lookup_token($consumer, $token_type, $token, $provider_token=TRUE) {
-    $token = DrupalOAuthToken::load($token);
+  public function lookup_token($consumer, $token_type, $token, $provider_token=TRUE) {
+    $token = DrupalOAuthToken::load($token, $provider_token);
     if ($token) {
       if ($token->type==$token_type
           && $token->consumer_key==$consumer->key
@@ -70,7 +76,7 @@ class DrupalOAuthDataStore extends OAuthDataStore {
    *   The existing nonce value or NULL in
    *   case it doesn't exist.
    */
-  function lookup_nonce($consumer, $token, $nonce, $timestamp) {
+  public function lookup_nonce($consumer, $token, $nonce, $timestamp) {
     $stored_nonce = db_result(db_query(
       "SELECT nonce FROM {oauth_common_nonce}
       WHERE nonce='%s' AND timestamp <= %d and token = '%s'", array(

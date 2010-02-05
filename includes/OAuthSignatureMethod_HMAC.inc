@@ -45,7 +45,7 @@ class OAuthSignatureMethod_HMAC extends OAuthSignatureMethod {
     }
   }
 
-  function get_name() {
+  public function get_name() {
     return "HMAC-" . strtoupper($this->algo);
   }
 

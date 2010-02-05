@@ -14,6 +14,7 @@ function oauth_common_autoload_info() {
     'DrupalOAuthConsumerToken'  => array('file' => 'includes/DrupalOAuthConsumerToken.inc'),
     'DrupalOAuthConsumer'       => array('file' => 'includes/DrupalOAuthConsumer.inc'),
     'OAuthSignatureMethod_HMAC' => array('file' => 'includes/OAuthSignatureMethod_HMAC.inc'),
+    'OAuthSignatureMethod_PLAINTEXT_SSL' => array('file' => 'includes/OAuthSignatureMethod_PLAINTEXT_SSL.inc'),
     'DrupalOAuthClient'         => array('file' => 'includes/DrupalOAuthClient.inc'),
     'OAuthServer'     => $lib,
     'OAuthDataStore'  => $lib,
@@ -71,97 +72,112 @@ function oauth_common_perm() {
  */
 function oauth_common_menu() {
   $menu = array();
+  $admin_base = array(
+    'access arguments' => array('administer oauth'),
+    'file' => 'oauth_common.admin.inc',
+  );
 
   $menu['admin/settings/oauth'] = array(
     'title' => 'OAuth',
+    'description' => 'The different context for authorization',
+    'page callback' => 'oauth_common_list_context',
+    'type' => MENU_NORMAL_ITEM,
+  ) + $admin_base;
+
+  $menu['admin/settings/oauth/list'] = array(
+    'title' => 'Contexts',
+    'description' => 'The different context for authorization',
+    'page callback' => 'oauth_common_list_context',
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  ) + $menu['admin/settings/oauth'];
+
+  $menu['admin/settings/oauth/settings'] = array(
+    'title' => 'Settings',
     'description' => 'Settings for OAuth',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('_oauth_common_admin'),
-    'access arguments' => array('administer oauth'),
-    'file' => 'oauth_common.admin.inc',
-    'type' => MENU_NORMAL_ITEM,
-  );
-  $menu['admin/settings/oauth/general'] = array_merge($menu['admin/settings/oauth'], array(
-    'title' => 'Settings',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-    'weight' => -10,
-  ));
-
-  $menu['admin/settings/oauth/contexts'] = array(
-    'title' => 'Contexts',
-    'description' => 'The different context for authorization',
-    'page callback' => '_oauth_common_admin_contexts',
-    'access arguments' => array('administer oauth'),
-    'file' => 'oauth_common.admin.inc',
     'type' => MENU_LOCAL_TASK,
-  );
+    'weight' => 5,
+  ) + $admin_base;
 
-  $menu['admin/settings/oauth/%/authorizations'] = array(
-    'title' => 'Authorization levels',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('_oauth_common_admin_authorization', 3),
-    'access arguments' => array('administer oauth'),
-    'file' => 'oauth_common.admin.inc',
-    'type' => MENU_CALLBACK,
-  );
+  $menu['admin/settings/oauth/add'] = array(
+    'title'          => 'Add context',
+    'page callback'  => 'oauth_common_add_context',
+    'type'           => MENU_LOCAL_TASK,
+    'weight'         => 10,
+  ) + $admin_base;
 
-  $menu['admin/settings/oauth/%/authorizations/%/delete'] = array(
-    'title' => 'Delete/disable an authorization level',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('_oauth_common_admin_authorization_delete', 3, 5),
-    'access arguments' => array('administer oauth'),
-    'file' => 'oauth_common.admin.inc',
-    'type' => MENU_CALLBACK,
-  );
+  $menu['admin/settings/oauth/%oauth_common_context/edit'] = array(
+    'title'          => 'Edit context',
+    'page callback'  => 'oauth_common_edit_context',
+    'page arguments' => array(3),
+    'type'           => MENU_LOCAL_TASK,
+    'weight'         => 10,
+  ) + $admin_base;
+
+  $menu['admin/settings/oauth/%oauth_common_context/export'] = array(
+    'title'          => 'Export context',
+    'page callback'  => 'drupal_get_form',
+    'page arguments' => array('oauth_common_export_context', 3),
+    'type'           => MENU_LOCAL_TASK,
+    'weight'         => 20,
+  ) + $admin_base;
+
+  $menu['admin/settings/oauth/%oauth_common_context/delete'] = array(
+    'title'          => 'Delete context',
+    'page callback'  => 'drupal_get_form',
+    'page arguments' => array('oauth_common_delete_confirm_context', 3),
+    'type'           => MENU_CALLBACK,
+  ) + $admin_base;
+
+  $menu['admin/settings/oauth/%oauth_common_context/disable'] = array(
+    'page callback'  => 'oauth_common_context',
+    'page arguments' => array(3),
+    'type'           => MENU_CALLBACK,
+  ) + $admin_base;
+
+  $menu['admin/settings/oauth/%oauth_common_context/enable'] = array(
+    'page callback'  => 'oauth_common_enable_context',
+    'page arguments' => array(3),
+    'type'           => MENU_CALLBACK,
+  ) + $admin_base;
 
   // OAuth doesn't need different endpoints for the different context as all
   // actions are done with a specific consumer, which in itself is associated
   // with a context.
 
+  $page_base = array(
+    'access callback' => '_oauth_common_always_true',
+    'file' => 'oauth_common.pages.inc',
+    'type' => MENU_CALLBACK,
+  );
+
   $menu['oauth/authorize'] = array(
     'page callback' => 'drupal_get_form',
     'page arguments' => array('_oauth_common_authorize'),
-    'access callback' => '_oauth_common_always_true',
-    'file' => 'oauth_common.pages.inc',
-    'type' => MENU_CALLBACK,
-  );
+  ) + $page_base;
 
   $menu['oauth/authorized'] = array(
     'title' => 'Authorization finished',
     'page callback' => '_oauth_common_authorized',
-    'access callback' => '_oauth_common_always_true',
-    'file' => 'oauth_common.pages.inc',
-    'type' => MENU_CALLBACK,
-  );
+  ) + $page_base;
 
   $menu['oauth/request_token'] = array(
     'page callback' => '_oauth_common_request_token',
-    'access callback' => '_oauth_common_always_true',
-    'file' => 'oauth_common.pages.inc',
-    'type' => MENU_CALLBACK,
-  );
+  ) + $page_base;
 
   $menu['oauth/request_token_authorized'] = array(
     'page callback' => '_oauth_common_request_token_authorized',
-    'access callback' => '_oauth_common_always_true',
-    'file' => 'oauth_common.pages.inc',
-    'type' => MENU_CALLBACK,
-  );
+  ) + $page_base;
 
   $menu['oauth/authorized'] = array(
     'title' => 'Authorization finished',
     'page callback' => '_oauth_common_authorized',
-    'access callback' => '_oauth_common_always_true',
-    'file' => 'oauth_common.pages.inc',
-    'type' => MENU_CALLBACK,
-  );
+  ) + $page_base;
 
   $menu['oauth/access_token'] = array(
     'page callback' => '_oauth_common_access_token',
-    'access callback' => '_oauth_common_always_true',
-    'file' => 'oauth_common.pages.inc',
-    'type' => MENU_CALLBACK,
-  );
+  ) + $page_base;
 
   $menu['user/%user/applications'] = array(
     'title' => 'Applications',
@@ -250,6 +266,44 @@ function oauth_common_cron() {
     AND expires <= %d", array(
       ':now' => time(),
   ));
+}
+
+/**
+ * Implementation of hook_oauth_default_contexts().
+ */
+function oauth_common_default_oauth_common_context() {
+  $contexts = array();
+
+  $context = new stdClass;
+  $context->disabled = FALSE; /* Edit this to true to make a default context disabled initially */
+  $context->name = 'default';
+  $context->title = 'Default context';
+  $context->authorization_options = array();
+  $context->authorization_levels = array(
+    '*' => array(
+      'title' => 'Full access',
+      'description' => 'This will give @appname the same permissions that you normally have and will allow it to access the full range of services that @sitename provides.',
+    ),
+    'read' => array(
+      'title' => 'Read access',
+      'description' => 'This will allow @appname to fetch content that you have access to on @sitename.',
+    ),
+    'update' => array(
+      'title' => 'Update access',
+      'description' => 'This will allow @appname to update content that you have permissions to edit.',
+    ),
+    'create' => array(
+      'title' => 'Create access',
+      'description' => 'This will allow @appname to create new content on @sitename.',
+    ),
+    'delete' => array(
+      'title' => 'Delete access',
+      'description' => 'This will allow @appname to delete content from @sitename.',
+    ),
+  );
+  $contexts[$context->name] = $context;
+
+  return $contexts;
 }
 
 /**
@@ -438,118 +492,87 @@ function oauth_common_get_tokens($consumer_key, $type='access', $provider_tokens
   return $tokens;
 }
 
-/*
- * Returns all the the authorization contexts and their authorization levels.
+/**
+ * Create a new context with defaults appropriately set from schema.
+ * 
+ * @return stdClass
+ *  An context initialized with the default values.
+ */
+function oauth_common_context_new() {
+  ctools_include('export');
+  return ctools_export_new_object('oauth_common_context');
+}
+
+/**
+ * Load a single context.
+ *
+ * @param string $name
+ *  The name of the context.
+ * @return stdClass
+ *  The context configuration.
+ */
+function oauth_common_context_load($name) {
+  ctools_include('export');
+  $result = ctools_export_load_object('oauth_common_context', 'names', array($name));
+  if (isset($result[$name])) {
+    return $result[$name];
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * Load all contexts.
+ *
+ * @return array
+ *  Array of context objects keyed by context names.
+ */
+function oauth_common_context_load_all() {
+  ctools_include('export');
+  return ctools_export_load_object('oauth_common_context');
+}
+
+/**
+ * Saves an context in the database.
+ *
+ * @return void
+ */
+function oauth_common_context_save($context) {
+  $update = (isset($context->cid)) ? array('cid') : array();
+  drupal_write_record('oauth_common_context', $context, $update);
+}
+
+/**
+ * Remove an context.
+ *
+ * @return void
+ */
+function oauth_common_context_delete($context) {
+  db_query("DELETE FROM {oauth_common_context} WHERE name = '%s' AND cid = %d", $context->name, $context->cid);
+}
+
+/**
+ * Export an context.
+ *
+ * @return string
+ */
+function oauth_common_context_export($context, $indent = '') {
+  ctools_include('export');
+  $output = ctools_export_object('oauth_common_context', $context, $indent);
+  return $output;
+}
+
+/**
+ * Lists all available contexts.
  *
  * @return array
  */
-function oauth_common_authorization_contexts() {
-  static $contexts;
-  if (!$contexts) {
-    $contexts = module_invoke_all('oauth_default_contexts');
-
-    // Load contexts from the database
-    $res = db_query("SELECT * FROM {oauth_authorization_levels}");
-    while ($level = db_fetch_object($res)) {
-      $level->from_db = TRUE;
-      $contexts[$level->context]['authorization_levels'][$level->name] = $level;
-    }
-
-    foreach ($contexts as $context => $def) {
-      foreach ($def['authorization_levels'] as $name => $level) {
-        // Make sure that all authorization levels are objects
-        $level = (object)$level;
-
-        // Enforce defaults
-        $level->name = $name;
-        if (!isset($level->enabled)) {
-          $level->enabled = TRUE;
-        }
-        if (!isset($level->weight)) {
-          $level->weight = 0;
-        }
-
-        $contexts[$context]['authorization_levels'][$name] = $level;
-      }
-      uasort($contexts[$context], '_oauth_common_sort_authorization_levels');
-    }
+function oauth_common_context_list() {
+  $return = array();
+  $contexts = oauth_common_context_load_all();
+  foreach ($contexts as $context) {
+    $return[$context->context] = $context->title;
   }
-  return $contexts;
-}
-
-/**
- * Compares the weight of authorization level objects. Authorization levels
- * without a weight are interpreted as having a weight of 0.
- *
- * @param object $a
- * @param object $b
- * @return int
- */
-function _oauth_common_sort_authorization_levels($a, $b) {
-  return (isset($a->weight) ? $a->weight : 0) - (isset($b->weight) ? $b->weight : 0);
-}
-
-/**
- * Returns the authorization levels for a context as an associative array
- * keyed after the machine readable name.
- *
- * @return array
- */
-function oauth_common_authorization_levels($context='default') {
-  $contexts = oauth_common_authorization_contexts();
-  $levels = NULL;
-  if (isset($contexts[$context])) {
-    $levels = $contexts[$context]['authorization_levels'];
-  }
-  return $levels;
-}
-
-/**
- * Creates a new authorization level.
- *
- * @param string $name
- *  The machine-readable name of the authorization level.
- * @param string $title
- *  The human-readable name of the authentication level.
- * @param string $description
- *  The description of the authentication level.
- * @param string $context
- *  The context the authorization is valid within.
- * @param int $weight
- *  The weight of the authorization level.
- * @param bool $enabled
- *  The enabled state of the authorization level.
- * @return void
- */
-function oauth_common_write_authorization_level($name, $title, $description, $context='default', $weight=0, $enabled=TRUE) {
-  $levels = oauth_common_authorization_levels($context);
-  $update = NULL;
-  if (isset($levels[$name]) && $levels[$name]->from_db) {
-    $update = array('name', 'context');
-  }
-  $values = array(
-    'name' => $name,
-    'context' => $context,
-    'title' => $title,
-    'description' => $description,
-    'weight' => $weight,
-    'enabled' => $enabled,
-  );
-
-  drupal_write_record('oauth_authorization_levels', $values, $update);
-}
-
-/**
- * Deletes a authorization level
- *
- * @param string $name
- *  The machine-readable name of the authorization level.
- * @param string $context
- *  The context of the authorization level
- * @return void
- */
-function oauth_common_delete_authorization_level($name, $context='default') {
-  db_query("DELETE FROM {oauth_authorization_levels} WHERE name='%s'", array(
-    ':name' => $name,
-  ));
+  return $return;
 }

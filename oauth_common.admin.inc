@@ -3,7 +3,7 @@
 
 function _oauth_common_admin() {
   $form = array();
-  
+
   $form['oauth_common_enable_provider'] = array(
     '#type' => 'checkbox',
     '#title' => t('Enable the oauth provider'),
@@ -31,183 +31,469 @@ function _oauth_common_admin_settings_validate($form, $form_state) {
   }
 }
 
-function _oauth_common_admin_contexts() {
-  $contexts = oauth_common_authorization_contexts();
-  return theme('oauth_common_context_list', $contexts);
+/**
+ * Output a list of contexts.
+ */
+function oauth_common_list_context($js = NULL) {
+  $header = array(
+    array('data' => t('Title'),          'class' => 'oauth-common-contexts-title'),
+    array('data' => t('Storage'),        'class' => 'oauth-common-contexts-storage'),
+    array('data' => t('Operations'),     'class' => 'oauth-common-contexts-operations'),
+  );
+
+  $contexts = oauth_common_context_load_all();
+  $rows = array();
+
+  foreach ($contexts as $context) {
+    $operations = array();
+
+    if (empty($context->disabled)) {
+      $operations[] = array(
+        'title' => t('Edit'),
+        'href'  => 'admin/settings/oauth/' . $context->name . '/edit',
+      );
+      $operations[] = array(
+        'title' => t('Export'),
+        'href'  => 'admin/settings/oauth/' . $context->name . '/export',
+      );
+    }
+
+    if ($context->export_type == (EXPORT_IN_CODE | EXPORT_IN_DATABASE)) {
+      $operations[] = array(
+        'title' => t('Revert'),
+        'href'  => 'admin/settings/oauth/' . $context->name . '/delete',
+      );
+    }
+    elseif ($context->export_type != EXPORT_IN_CODE) {
+      $operations[] = array(
+        'title' => t('Delete'),
+        'href'  => 'admin/settings/oauth/' . $context->name . '/delete',
+      );
+    }
+    elseif (empty($context->disabled)) {
+      $operations[] = array(
+        'title' => t('Disable'),
+        'href'  => 'admin/settings/oauth/' . $context->name . '/disable',
+        'query' => drupal_get_destination(),
+      );
+    }
+    else {
+      $operations[] = array(
+        'title' => t('Enable'),
+        'href'  => 'admin/settings/oauth/' . $context->name . '/enable',
+        'query' => drupal_get_destination(),
+      );
+    }
+
+    $rows[$context->name] = array(
+      'data' => array(
+        'title' => array(
+          'data'  => $context->title,
+          'class' => 'oauth-common-contexts-title',
+        ),
+        'storage' => array(
+          'data'  => ($context->export_type == EXPORT_IN_CODE) ? t('In code') : t('In database'),
+          'class' => 'oauth-common-contexts-storage',
+        ),
+        'operations' => array(
+          'data'  => theme('links', $operations),
+          'class' => 'oauth-common-contexts-operations',
+        ),
+      ),
+      'class' => 'oauth-common-contexts-' . $context->name . (!empty($context->disabled) ? ' oauth-common-contexts-disabled' : ''),
+    );
+  }
+
+  $table = theme('table', $header, $rows, array('id' => 'oauth-common-list-contexts'));
+
+  return $table;
 }
 
 /**
- * Menu system callback that generates a form for
- * administrating the authorization levels.
- *
- * @param string $context
- *  The context whose authorization levels should be administered.
- * 
- * @return array
- *  A form array.
+ * Handle the add context page.
  */
-function _oauth_common_admin_authorization($form_state, $context='default') {
+function oauth_common_add_context() {
+  $context = oauth_common_context_new();
+  drupal_set_title(t('Add context'));
+  return oauth_common_edit_context($context);
+}
+
+/**
+ * Edit an context.
+ *
+ * Called from both the add and edit points to provide for common flow.
+ */
+function oauth_common_edit_context($context) {
+  if (!is_object($context)) {
+    $context = oauth_common_context_load($context);
+  }
+  if ($context && !empty($context->title)) {
+    drupal_set_title(check_plain($context->title));
+  }
+  return drupal_get_form('oauth_common_edit_form_context', $context);
+}
+
+/**
+ * Form to edit the settings of an context.
+ */
+function oauth_common_edit_form_context(&$form_state, $context) {
   $form = array();
 
-  $form['context'] = array(
-    '#type' => 'value',
+  $form['cid'] = array(
+    '#type'  => 'value',
+    '#value' => isset($context->cid) ? $context->cid : '',
+  );
+
+  $form['context_object'] = array(
+    '#type'  => 'value',
     '#value' => $context,
   );
 
-  $levels = oauth_common_authorization_levels($context);
+  $form['name'] = array(
+    '#type'          => 'textfield',
+    '#size'          => 24,
+    '#maxlength'     => 255,
+    '#default_value' => $context->name,
+    '#title'         => t('Context name'),
+    '#description'   => t('A unique name used to identify this preset internally. It must be only be alpha characters and underscores. No spaces, numbers or uppercase characters.'),
+    '#required'      => TRUE,
+  );
+
+  $form['title'] = array(
+    '#type'          => 'textfield',
+    '#size'          => 24,
+    '#maxlength'     => 255,
+    '#default_value' => $context->title,
+    '#title'         => t('Context title'),
+    '#required'      => TRUE,
+  );
+
+  $sign_methods = array(
+    'PLAINTEXT' => t('Plaintext'),
+  );
+  foreach (hash_algos() as $algo) {
+    $sign_methods['HMAC-' . strtoupper($algo)] = 'HMAC-' . strtoupper($algo);
+  }
+
+  $form['signature_methods'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Signature methods'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#tree' => TRUE,
+    'selected' => array(
+      '#type' => 'checkboxes',
+      '#title' => t('Supported signature methods'),
+      '#options' => $sign_methods,
+      '#default_value' => !empty($context->authorization_options['signature_methods']) ?
+         $context->authorization_options['signature_methods']:
+         array('HMAC-SHA1', 'HMAC-SHA256', 'HMAC-SHA384', 'HMAC-SHA512'),
+    )
+  );
+
+  $form['authorization_options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Authorization options'),
+    '#tree' => TRUE,
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+
+  $form['authorization_options']['page_title'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Page title'),
+    '#description' => t('The title of the authorization page.'),
+    '#size' => 40,
+    '#maxlength' => 255,
+    '#default_value' => $context->authorization_options['page_title'],
+  );
+
+  $form['authorization_options']['message'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Message'),
+    '#description' => t('The message shown to the user when authorizing.'),
+    '#default_value' => $context->authorization_options['message'],
+  );
+
+  $form['authorization_options']['warning'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Warning'),
+    '#description' => t('The warning shown to the user when authorizing.'),
+    '#default_value' => $context->authorization_options['warning'],
+  );
+
+  $form['authorization_options']['deny_access_title'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Deny access title'),
+    '#description' => t('The title of deny access link.'),
+    '#size' => 40,
+    '#maxlength' => 255,
+    '#default_value' => $context->authorization_options['deny_access_title'],
+  );
+
+  $form['authorization_options']['grant_access_title'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Grant access title'),
+    '#description' => t('The title of grant access button.'),
+    '#size' => 40,
+    '#maxlength' => 255,
+    '#default_value' => $context->authorization_options['grant_access_title'],
+  );
+
+  $form['authorization_options']['access_token_lifetime'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Access token lifetime'),
+    '#description' => t('The time, in seconds, for which an access token should be valid, use 0 to never expire access tokens.'),
+    '#size' => 10,
+    '#maxlength' => 255,
+    '#default_value' => empty($context->authorization_options['access_token_lifetime']) ? 0 : $context->authorization_options['access_token_lifetime'],
+  );
+
+  $form['authorization_options']['disable_auth_level_selection'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Disable authorization level selection'),
+    '#description' => t('If this is checked the user won\'t be able to choose the authorization level, and the default authorization level(s) will be used.'),
+    '#default_value' => !empty($context->authorization_options['disable_auth_level_selection']),
+  );
+
+  $form['authorization_levels'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Authorization levels'),
+    '#tree' => TRUE,
+    '#collapsible' => TRUE
+  );
+
+  $levels = $context->authorization_levels + array('' => array(
+    'title' => '',
+  ));
+
   foreach ($levels as $name => $level) {
-    $set = array(
+    $title = !empty($name) ? check_plain($name) : t('New level');
+    if ($title == '*') {
+      $title = t('Full access');
+    }
+    $l = array(
       '#type' => 'fieldset',
-      '#title' => '"' . $name . '" - ' . $level->title,
-      '#tree' => TRUE,
+      '#title' => $title,
+      'name' => array(
+        '#type' => 'textfield',
+        '#title' => t('Name'),
+        '#description' => t('The name of the authorization level.'),
+        '#size' => 40,
+        '#maxlength' => 255,
+        '#default_value' => $name,
+      ),
       'title' => array(
         '#type' => 'textfield',
-        '#maxlength' => 100,
         '#title' => t('Title'),
-        '#default_value' => $level->title,
+        '#description' => t('The title of the authorization level.'),
+        '#size' => 40,
+        '#maxlength' => 255,
+        '#default_value' => $level['title'],
       ),
       'description' => array(
         '#type' => 'textarea',
-        '#maxlength' => 255,
         '#title' => t('Description'),
-        '#default_value' => $level->description,
+        '#description' => t('The description of the authorization level.'),
+        '#default_value' => $level['description'],
       ),
-      'weight' => array(
-        '#type' => 'textfield',
-        '#maxlength' => 3,
-        '#title' => t('Weight'),
-        '#default_value' => $level->weight,
-      ),
-      'enabled' => array(
+      'default' => array(
         '#type' => 'checkbox',
-        '#title' => t('Enabled'),
-        '#default_value' => $level->enabled,
-      ),
-      'delete' => array(
-        '#type' => 'item',
-        '#value' => l('Delete', 'admin/settings/oauth/' . $context . '/authorizations/' . $name . '/delete'),
+        '#title' => t('Selected by default'),
+        '#description' => t('Whether the authentication level should be checked by default.'),
+        '#default_value' => is_array($context->authorization_options['default_authorization_levels']) && in_array($name, $context->authorization_options['default_authorization_levels']),
       ),
     );
-    $form[$name] = $set;
+    if (!empty($name)) {
+      $l['delete'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Delete'),
+        '#description' => t('Check this to delete the authorization level.'),
+        '#default_value' => FALSE,
+      );
+    }
+    $form['authorization_levels'][] = $l;
   }
 
-  $form['add_level'] = array(
-    '#type' => 'fieldset',
-    '#tree' => TRUE,
-    '#title' => t('Add a authorization level'),
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-    'name' => array(
-      '#type' => 'textfield',
-      '#maxlength' => 32,
-      '#title' => t('Name'),
-      '#default_value' => '',
-    ),
-    'title' => array(
-      '#type' => 'textfield',
-      '#maxlength' => 100,
-      '#title' => t('Title'),
-      '#default_value' => '',
-    ),
-    'description' => array(
-      '#type' => 'textarea',
-      '#maxlength' => 255,
-      '#title' => t('Description'),
-      '#default_value' => '',
-    ),
-  );
-
   $form['submit'] = array(
-    '#type' => 'submit',
+    '#type'  => 'submit',
     '#value' => t('Save'),
   );
 
   return $form;
 }
 
-function _oauth_common_admin_authorization_submit($form, $form_state) {
+/**
+ * Validate submission of the preset edit form.
+ */
+function oauth_common_edit_form_context_validate(&$form, &$form_state) {
   $values = $form_state['values'];
-  $context = $values['context'];
-  $levels = oauth_common_authorization_levels($context);
 
-  // Update titles and descriptions
-  foreach ($levels as $name => $level) {
-    $lv = $values[$name];
-    $lv['weight'] = intval($lv['weight']);
-    oauth_common_write_authorization_level($name, $lv['title'], $lv['description'], $context, $lv['weight'], $lv['enabled']);
+  // Test uniqueness of name:
+  if (preg_match("/[^A-Za-z0-9_]/", $values['name'])) {
+    form_error($form['name'], t('Context name must be alphanumeric or underscores only.'));
+  }
+  else {
+    $query = "SELECT cid FROM {oauth_common_context} WHERE name = '%s'";
+    $args  = array(
+      ':name' => $values['name'],
+    );
+    if (!empty($values['cid']) && is_numeric($values['cid'])) {
+      $query .= ' AND cid != %d';
+      $args[':cid'] = $values['cid'];
+    }
+    if (db_result(db_query($query, $args))) {
+      form_error($form['name'], t('Context name must be unique.'));
+    }
   }
 
-  // Add a authorization level if the name and title fields have been filled
-  $add = $values['add_level'];
-  if (!empty($add['name']) && !empty($add['title'])) {
-    oauth_common_write_authorization_level($add['name'], $add['title'], $add['description'], $context);
+  // Check that the authorization level names are unique within the context
+  $levels = array();
+  $default_exists = FALSE;
+  foreach ($values['authorization_levels'] as $idx => $level) {
+    if (!empty($level['name']) && !$level['delete']) {
+      if (!empty($levels[$level['name']])) {
+        form_error($form['authorization_levels'][$idx]['name'], t('Authorization level name must be unique.'));
+      }
+      else if (preg_match("/[^A-Za-z0-9_\*]/", $level['name'])) {
+        form_error($form['authorization_levels'][$idx]['name'], t('Authorization level name must be alphanumeric or underscores only.'));
+      }
+
+      if (empty($level['title'])) {
+        form_error($form['authorization_levels'][$idx]['title'], t('Authorization levels must have a title.'));
+      }
+      $default_exists = $default_exists || $level['default'];
+      $levels[$level['name']] = $level;
+    }
   }
 
-  // TODO: This doesn't belong here, we need a hook that services_oauth could respond to
-  // Clear the services cache so that methods are updated
-  cache_clear_all('services:', 'cache', TRUE);
+  // Check that we actually got a number as access token lifetime
+  if (!is_numeric($values['authorization_options']['access_token_lifetime'])) {
+    form_error($form['authorization_options']['access_token_lifetime'], t('The access token lifetime must be numeric.'));
+  }
+
+  // Check that at least one default authorization level is checked when
+  // authorization level selection is disabled.
+  if (!$default_exists && $values['authorization_options']['disable_auth_level_selection']) {
+    form_error($form['authorization_options']['disable_auth_level_selection'], t('You must select at least one default authorirization level if level selection is disabled.'));
+  }
 }
 
 /**
- * Menu system callback for the confirmation page when deleting a authorization
- * level.
- *
- * @param array $form_state
- * @param string $context
- *  The context of the authorization to delete.
- * @param string $authorization
- *  The machine-readable name of the authorization level.
- * @return array
- *  A form array.
+ * Process submission of the mini panel edit form.
  */
-function _oauth_common_admin_authorization_delete($form_state, $context, $authorization) {
-  $levels = oauth_common_authorization_levels($context);
+function oauth_common_edit_form_context_submit($form, &$form_state) {
+  $context = $form_state['values']['context_object'];
+  $values = $form_state['values'];
 
-  drupal_set_title(t('Deleting "!title"', array(
-    '!title' => $levels[$authorization]->title,
-  )));
+  $context->name = $values['name'];
+  $context->title = $values['title'];
 
-  $form = array(
-    'context' => array(
-      '#type' => 'value',
-      '#value' => $context,
-    ),
-    'authorization' => array(
-      '#type' => 'value',
-      '#value' => $authorization,
-    ),
+  $auth_options = array(
+    'access_token_lifetime' => 0,
   );
+  foreach ($values['authorization_options'] as $key => $value) {
+    if (!empty($value)) {
+      $auth_options[$key] = $value;
+    }
+  }
+  $context->authorization_options = $auth_options;
 
-  $form['description'] = array(
-    '#type' => 'item',
-    '#value' => t('Are you sure that you want to delete the authorization level "!title" (!name). Operations that have been set to require this authorization level will be set to require full access. This could be a <em>very bad thing</em> on a production site, and <em>will</em> break applications that integrate with your site (if they have been granted this authorization level and depend on it). Only do this if you <em>really</em> know what you\'re doing.', array(
-      '!title' => $levels[$authorization]->title,
-      '!name' => $authorization,
-    )),
+  // Collect the names of the selected signature methods.
+  $sig_options = array();
+  foreach ($values['signature_methods']['selected'] as $name => $selected) {
+    if ($selected) {
+      $sig_options[] = $name;
+    }
+  }
+  $context->authorization_options['signature_methods'] = $sig_options;
+
+  // Set the auth levels and default levels for the context
+  $levels = array();
+  $default_levels = array();
+  foreach ($values['authorization_levels'] as $level) {
+    if (!empty($level['name']) && !$level['delete']) {
+      $name = $level['name'];
+      if ($level['default']) {
+        $default_levels[] = $name;
+      }
+      unset($level['name'], $level['default'], $level['delete']);
+      $levels[$name] = $level;
+    }
+  }
+  $context->authorization_levels = $levels;
+  $context->authorization_options['default_authorization_levels'] = $default_levels;
+
+  oauth_common_context_save($context);
+
+  if (empty($context->cid)) {
+    drupal_set_message(t('Your new context %title has been saved.', array('%title' => $context->title)));
+    $form_state['values']['cid'] = $context->cid;
+  }
+  else {
+    drupal_set_message(t('Your changes have been saved.'));
+  }
+
+  $form_state['redirect'] = 'admin/settings/oauth';
+}
+
+/**
+ * Provide a form to confirm deletion of a context.
+ */
+function oauth_common_delete_confirm_context(&$form_state, $context) {
+  if (!is_object($context)) {
+    $context = oauth_common_context_load($context);
+  }
+  if ($context->export_type == (EXPORT_IN_CODE | EXPORT_IN_DATABASE)) {
+    $title  = t('Are you sure you want to revert the context "@title"?', array('@title' => $context->title));
+    $submit = t('Revert');
+  }
+  elseif ($context->export_type != EXPORT_IN_CODE) {
+    $title  = t('Are you sure you want to delete the context "@title"?', array('@title' => $context->title));
+    $submit = t('Delete');
+  }
+  else {
+    drupal_not_found();
+    die;
+  }
+  $form['context'] = array('#type' => 'value', '#value' => $context->name);
+  $form['cid']      = array('#type' => 'value', '#value' => $context->cid);
+  return confirm_form($form,
+    $title,
+    !empty($_GET['destination']) ? $_GET['destination'] : 'admin/settings/oauth',
+    t('This action cannot be undone.'),
+    $submit, t('Cancel')
   );
+}
 
-  $form['confirm'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('I\'ve really read and understood the above warning. Delete the authorization level please!'),
-    '#required' => TRUE,
-  );
+/**
+ * Handle the submit button to delete a context.
+ */
+function oauth_common_delete_confirm_context_submit($form, &$form_state) {
+  $context = oauth_common_context_load($form_state['values']['context']);
+  if ($context->cid == $form_state['values']['cid']) {
+    oauth_common_context_delete($context);
+    $form_state['redirect'] = 'admin/settings/oauth';
+  }
+}
 
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Delete'),
+/**
+ * Page callback to export a context to PHP code.
+ */
+function oauth_common_export_context(&$form_state, $context) {
+  if (!is_object($context)) {
+    $context = oauth_common_context_load($context);
+  }
+  drupal_set_title(check_plain($context->title));
+  $code = oauth_common_context_export($context);
+
+  $lines = substr_count($code, "\n") + 4;
+  $form['code'] = array(
+    '#type'          => 'textarea',
+    '#title'         => $context->title,
+    '#default_value' => $code,
+    '#rows'          => $lines,
   );
 
   return $form;
-}
-
-function _oauth_common_admin_authorization_delete_submit($form, $form_state) {
-  $context = $form_state['values']['context'];
-  $authorization = $form_state['values']['authorization'];
-
-  // Load the authorization level before we delete is so that
-  // we can use it to display the title in our status message.
-  $levels = oauth_common_authorization_levels($context);
-  oauth_common_delete_authorization_level($authorization, $context);
-  drupal_set_message(t('The authorization level "!title" has been deleted', array('!title' => $levels[$authorization]->title)));
-  drupal_goto('admin/settings/oauth/authorizations/' . $context);
 }

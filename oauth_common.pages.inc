@@ -53,7 +53,7 @@ function _oauth_common_authorize() {
   $req = DrupalOAuthRequest::from_request();
   $token = $req->get_parameter('oauth_token');
   $callback = $req->get_parameter('oauth_callback');
-  $token = DrupalOAuthToken::load($token);
+  $token = DrupalOAuthToken::load($token, TRUE);
 
   // Check that we have a valid token
   if (!$token) {
@@ -213,7 +213,7 @@ function _oauth_common_authorize_submit(&$form, &$form_state) {
 
   // Save the list of all services that the user allowed the
   // consumer to do
-  $token = DrupalOAuthToken::load($parameters['oauth_token']);
+  $token = DrupalOAuthToken::load($parameters['oauth_token'], TRUE);
   $token->uid = $user->uid;
   $token->authorized = 1;
   $token->services = array();
@@ -531,7 +531,7 @@ function _oauth_common_user_applications_delete_submit($form, &$form_state) {
 function _oauth_common_user_authorization_edit($form_state, $user, $key) {
   $form = array();
 
-  $token = DrupalOAuthToken::load($key);
+  $token = DrupalOAuthToken::load($key, TRUE);
   $consumer = DrupalOAuthConsumer::load($token->consumer_key);
 
   drupal_set_title(t('Authorization for @app', array('@app' => $consumer->name)));
@@ -601,7 +601,7 @@ function _oauth_common_user_authorization_edit_submit($form, $form_state) {
     }
   }
 
-  $token = DrupalOAuthToken::load($values['key']);
+  $token = DrupalOAuthToken::load($values['key'], TRUE);
   $consumer = DrupalOAuthConsumer::load($token->consumer_key);
 
   $token->services = $services;
@@ -615,7 +615,7 @@ function _oauth_common_user_authorization_edit_submit($form, $form_state) {
 }
 
 function _oauth_common_user_authorization_delete($form_state, $user, $key) {
-  $token = DrupalOAuthToken::load($key);
+  $token = DrupalOAuthToken::load($key, TRUE);
   $consumer = DrupalOAuthConsumer::load($token->consumer_key);
 
   drupal_set_title(t('Deleting authorization for "@title"', array(
@@ -660,7 +660,7 @@ function _oauth_common_user_authorization_delete($form_state, $user, $key) {
 }
 
 function _oauth_common_user_authorization_delete_submit($form, $form_state) {
-  $token = DrupalOAuthToken::load($form_state['values']['key']);
+  $token = DrupalOAuthToken::load($form_state['values']['key'], TRUE);
   $consumer = DrupalOAuthConsumer::load($token->consumer_key);
   $token->delete();
   drupal_set_message(t('The @consumer token @token was deleted.', array(
