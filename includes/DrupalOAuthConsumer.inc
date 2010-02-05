@@ -19,11 +19,11 @@ class DrupalOAuthConsumer extends OAuthConsumer {
       }
     }
   }
-  
+
   /**
    * Writes the consumer to the database
    *
-   * @param bool $update 
+   * @param bool $update
    *  Optional. Set to TRUE if the consumer exists and should be updated. Defaults to FALSE.
    * @return void
    */

@@ -5,30 +5,46 @@
  * This update turns the contexts into ctools-manageable entities and migrates
  * the authorization levels into the new contexts table.
  */
-function _oauth_common_update_6101() {
+function _oauth_common_update_6200() {
   $ret = array();
 
   $contexts = array();
 
-  db_create_table($ret, 'oauth_common_context', _oauth_common_oauth_common_context_6101());
+  db_create_table($ret, 'oauth_common_context', _oauth_common_oauth_common_context_6200());
 
+  // Fetch the authorization levels and create contexts from them
   $res = db_query("SELECT * FROM {oauth_authorization_levels}");
-  while ($l = db_fetch_array($res)) {
-    $contexts[$l['context']] = $l;
+  while($l = db_fetch_array($res)) {
+    $name = $l['name'];
+    $context = $l['context'];
+    unset($l['name'], $l['context']);
+    if (!isset($contexts[$name])) {
+      $contexts[$name] = oauth_common_context_new();
+      $contexts[$name]->name = $name;
+      $contexts[$name]->title = $name;
+    }
+    $contexts[$context]['authorization_levels'][$name] = $l;
+  }
+  foreach ($contexts as $context) {
+    oauth_common_context_save($context);
   }
 
-  // Set name and title for the contexts properly
-  foreach ($contexts as $name => $context) {
-    $contexts[$name]['name'] = $name;
-    $contexts[$name]['title'] = $name;
-  }
+  // Change all the oauth_common_token indexes and keys to take provider_token
+  // into account.
+  db_drop_primary_key(&$ret, 'oauth_common_token');
+  db_drop_index(&$ret, 'oauth_common_token', 'token_key_type');
+  db_drop_index(&$ret, 'oauth_common_token', 'consumer_key');
+
+  db_add_primary_key(&$ret, 'oauth_common_token', array('token_key', 'provider_token'));
+  db_add_index(&$ret, 'oauth_common_token', 'token_key_type', array('token_key', 'provider_token', 'type'));
+  db_add_index(&$ret, 'oauth_common_token', 'consumer_key', array('consumer_key', 'provider_token'));
 
   db_drop_table($ret, 'oauth_authorization_levels');
 
   return $ret;
 }
 
-function _oauth_common_oauth_common_context_6101() {
+function _oauth_common_oauth_common_context_6200() {
   return array(
     'description' => 'Stores contexts for OAuth common',
     'export' => array(

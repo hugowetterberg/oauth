@@ -3,26 +3,7 @@
 
 function oauth_common_install() {
   drupal_install_schema('oauth_common');
-
-  oauth_common_install_default_oauth_context();
 }
-
-function oauth_common_install_default_oauth_context() {
-  module_load_include('module', 'oauth_common');
-
-  // Create default authorization levels
-  oauth_common_write_authorization_level('*', 'Full access',
-    'This will give @appname the same permissions that you normally have and will allow it to access the full range of services that @sitename provides.', 'default', -1);
-  oauth_common_write_authorization_level('read', 'Read access',
-    'This will allow @appname to fetch content that you have access to on @sitename.');
-  oauth_common_write_authorization_level('update', 'Update access',
-    'This will allow @appname to update content that you have permissions to edit.');
-  oauth_common_write_authorization_level('create', 'Create access',
-    'This will allow @appname to create new content on @sitename.');
-  oauth_common_write_authorization_level('delete', 'Delete access',
-    'This will allow @appname to delete content from @sitename.');
-}
-
 function oauth_common_uninstall() {
   drupal_uninstall_schema('oauth_common');
 }
@@ -224,10 +205,10 @@ function oauth_common_schema() {
         'default'     => 0,
       ),
     ),
-   'primary key' => array('token_key'),
+   'primary key' => array('token_key', 'provider_token'),
    'indexes' => array(
-      'token_key_type' => array('token_key', 'type'),
-      'consumer_key' => array('consumer_key'),
+      'token_key_type' => array('token_key', 'provider_token', 'type'),
+      'consumer_key' => array('consumer_key', 'provider_token'),
     ),
   );
   $schema['oauth_common_consumer_token'] = array(
@@ -334,14 +315,14 @@ function oauth_common_update_6003() {
  */
 function oauth_common_update_6100() {
   module_load_include('6100.inc', 'oauth_common', 'updates/update');
-  return _oauth_common_update_6101();
+  return _oauth_common_update_6200();
 }
 
 /**
  * This update turns the contexts into ctools-manageable entities and migrates
  * the authorization levels into the new contexts table.
  */
-function oauth_common_update_6101() {
-  module_load_include('6101.inc', 'oauth_common', 'updates/update');
-  return _oauth_common_update_6101();
+function oauth_common_update_6200() {
+  module_load_include('6200.inc', 'oauth_common', 'updates/update');
+  return _oauth_common_update_6200();
 }

@@ -5,7 +5,7 @@ class DrupalOAuthConsumerToken extends OAuthToken {
   public $provider_url = '';
   public $access_endpoint = '';
   public $uid = 0;
-  
+
   public function __construct($key, $secret, $params=array()) {
     parent::__construct($key, $secret);
     foreach($params as $key => $value) {
@@ -18,7 +18,7 @@ class DrupalOAuthConsumerToken extends OAuthToken {
   /**
    * Writes the token to the database
    *
-   * @param bool $update 
+   * @param bool $update
    *  Optional. Set to TRUE if the token exists and should be updated. Defaults to FALSE.
    * @return void
    */

@@ -29,7 +29,7 @@ class DrupalOAuthToken extends OAuthToken {
    * @return void
    */
   public function write($update=FALSE) {
-    $primary = $update ? array('token_key') : array();
+    $primary = $update ? array('token_key', 'provider_token') : array();
 
     if (!$update) {
       $this->created = time();
@@ -54,17 +54,22 @@ class DrupalOAuthToken extends OAuthToken {
    * @return void
    */
   public function delete() {
-    self::deleteToken($this->key);
+    self::deleteToken($this->key, $this->provider_token);
   }
 
   /**
    * Deletes the token with the key from the database
    *
+   * @param string $key
+   *  The key of the token to delete.
+   * @param bool $provider_token
+   *  Whether the token to delete is a provider token.
    * @return void
    */
-  public static function deleteToken($key) {
-    db_query("DELETE FROM {oauth_common_token} WHERE token_key='%s'", array(
-      'key' => $key,
+  public static function deleteToken($key, $provider_token=TRUE) {
+    db_query("DELETE FROM {oauth_common_token} WHERE token_key='%s' AND provider_token=%d", array(
+      ':key' => $key,
+      ':provider_token' => $provider_token,
     ));
   }
 
@@ -73,12 +78,15 @@ class DrupalOAuthToken extends OAuthToken {
    *
    * @param string $key
    *  The key of the token to get
+   * @param bool $provider_token
+   *  Whether the token to load is a provider token.
    * @return DrupalOAuthToken
    *  The loaded token object or FALSE if load failed
    */
-  public static function load($key) {
-    return self::fromResult(db_query("SELECT * FROM {oauth_common_token} WHERE token_key='%s'", array(
+  public static function load($key, $provider_token=TRUE) {
+    return self::fromResult(db_query("SELECT * FROM {oauth_common_token} WHERE token_key='%s' AND provider_token=%d", array(
       ':key' => $key,
+      ':provider_token' => $provider_token,
     )));
   }
 

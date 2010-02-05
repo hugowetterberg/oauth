@@ -112,6 +112,7 @@ function oauth_common_menu() {
     'page callback'  => 'oauth_common_edit_context',
     'page arguments' => array(3),
     'type'           => MENU_LOCAL_TASK,
+    'weight'         => 10,
   ) + $admin_base;
 
   $menu['admin/settings/oauth/%oauth_common_context/export'] = array(
@@ -265,6 +266,44 @@ function oauth_common_cron() {
     AND expires <= %d", array(
       ':now' => time(),
   ));
+}
+
+/**
+ * Implementation of hook_oauth_default_contexts().
+ */
+function oauth_common_default_oauth_common_context() {
+  $contexts = array();
+
+  $context = new stdClass;
+  $context->disabled = FALSE; /* Edit this to true to make a default context disabled initially */
+  $context->name = 'default';
+  $context->title = 'Default context';
+  $context->authorization_options = array();
+  $context->authorization_levels = array(
+    '*' => array(
+      'title' => 'Full access',
+      'description' => 'This will give @appname the same permissions that you normally have and will allow it to access the full range of services that @sitename provides.',
+    ),
+    'read' => array(
+      'title' => 'Read access',
+      'description' => 'This will allow @appname to fetch content that you have access to on @sitename.',
+    ),
+    'update' => array(
+      'title' => 'Update access',
+      'description' => 'This will allow @appname to update content that you have permissions to edit.',
+    ),
+    'create' => array(
+      'title' => 'Create access',
+      'description' => 'This will allow @appname to create new content on @sitename.',
+    ),
+    'delete' => array(
+      'title' => 'Delete access',
+      'description' => 'This will allow @appname to delete content from @sitename.',
+    ),
+  );
+  $contexts[$context->name] = $context;
+
+  return $contexts;
 }
 
 /**
@@ -510,7 +549,7 @@ function oauth_common_context_save($context) {
  * @return void
  */
 function oauth_common_context_delete($context) {
-  db_query("DELETE FROM {oauth_common_context} WHERE name = '%s' AND eid = %d", $context->name, $context->cid);
+  db_query("DELETE FROM {oauth_common_context} WHERE name = '%s' AND cid = %d", $context->name, $context->cid);
 }
 
 /**
