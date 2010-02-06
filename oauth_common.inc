@@ -48,10 +48,9 @@ function oauth_common_user_access_tokens($uid) {
  */
 function oauth_common_verify_request() {
   $req = DrupalOAuthRequest::from_request();
-
   // Verify
-  $consumer = $req->get_parameter('oauth_consumer_key');
-  if (!empty($consumer)) {
+  $consumer_key = $req->get_parameter('oauth_consumer_key');
+  if (!empty($consumer_key)) {
     $consumer = DrupalOAuthConsumer::load($consumer_key);
     if ($consumer) {
       $context = oauth_common_context_load($consumer->context);

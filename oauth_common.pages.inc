@@ -29,7 +29,7 @@ function _oauth_common_validate_request_callback($type, $unsigned=NULL) {
 function _oauth_common_authorized() {
   // If we have a outh_token we're acting as a consumer and just got authorized
   if (!empty($_GET['oauth_token'])) {
-    $request_token = DrupalOAuthToken::load($_GET['oauth_token']);
+    $request_token = DrupalOAuthToken::load($_GET['oauth_token'], FALSE);
     if ($request_token) {
       $consumer_token = DrupalOAuthConsumerToken::load($request_token->consumer_key);
       $client = new DrupalOAuthClient($consumer_token, $request_token);
@@ -289,15 +289,12 @@ function _oauth_common_request_token() {
 function _oauth_common_access_token() {
   try {
     $req = DrupalOAuthRequest::from_request();
-    $server = new DrupalOAuthServer(oauth_common_context_from_request($req));
+    $context = oauth_common_context_from_request($req);
+    $server = new DrupalOAuthServer($context);
     $access_token = $server->fetch_access_token($req);
 
-    $consumer = DrupalOAuthConsumer::load($access_token->consumer_key);
-    $contexts = oauth_common_authorization_contexts();
-    $context = $contexts[$consumer->context];
-
     // Set the expiry time based on context settings or get parameter
-    $expires = !empty($context['access_token_lifetime']) ? time() + $context['access_token_lifetime'] : 0;
+    $expires = !empty($context->authorization_options['access_token_lifetime']) ? time() + $context->authorization_options['access_token_lifetime'] : 0;
     if ($_GET['expires'] && intval($_GET['expires'])) {
       $hint = intval($_GET['expires']);
       // Only accept more restrictive expiry times
@@ -332,8 +329,8 @@ function _oauth_common_user_applications($form_state, $account) {
   );
   $can_register_consumers = user_access('oauth register any consumers');
   if (!$can_register_consumers) {
-    foreach(oauth_common_authorization_contexts() as $context => $levels) {
-      $can_register_consumers = $can_register_consumers || user_access(sprintf('oauth register consumers in %s', $context));
+    foreach(oauth_common_context_load_all() as $context) {
+      $can_register_consumers = $can_register_consumers || user_access(sprintf('oauth register consumers in %s', $context->name));
     }
   }
   $ci = oauth_common_user_consumers($account->uid);
