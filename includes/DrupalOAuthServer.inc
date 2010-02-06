@@ -1,5 +1,5 @@
 <?php
-// $Id: DrupalOAuthServer.inc,v 1.3 2010/01/19 10:43:58 hugowetterberg Exp $
+// $Id: DrupalOAuthServer.inc,v 1.4 2010/02/05 21:55:00 hugowetterberg Exp $
 
 class DrupalOAuthServer extends OAuthServer {
   private $context;

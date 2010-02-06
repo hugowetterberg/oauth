@@ -1,5 +1,5 @@
 <?php
-// $Id: DrupalOAuthDataStore.inc,v 1.4 2010/01/19 10:43:58 hugowetterberg Exp $
+// $Id: DrupalOAuthDataStore.inc,v 1.5 2010/02/05 21:55:00 hugowetterberg Exp $
 
 /**
 * Database abstraction class
