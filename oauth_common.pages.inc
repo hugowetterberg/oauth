@@ -29,7 +29,7 @@ function _oauth_common_validate_request_callback($type, $unsigned=NULL) {
 function _oauth_common_authorized() {
   // If we have a outh_token we're acting as a consumer and just got authorized
   if (!empty($_GET['oauth_token'])) {
-    $request_token = DrupalOAuthToken::load($_GET['oauth_token']);
+    $request_token = DrupalOAuthToken::load($_GET['oauth_token'], FALSE);
     if ($request_token) {
       $consumer_token = DrupalOAuthConsumerToken::load($request_token->consumer_key);
       $client = new DrupalOAuthClient($consumer_token, $request_token);
@@ -51,6 +51,7 @@ function _oauth_common_authorized() {
 function _oauth_common_authorize() {
   module_load_include('inc', 'oauth_common');
   $req = DrupalOAuthRequest::from_request();
+  $context = oauth_common_context_from_request($req);
   $token = $req->get_parameter('oauth_token');
   $callback = $req->get_parameter('oauth_callback');
   $token = DrupalOAuthToken::load($token, TRUE);
@@ -62,8 +63,6 @@ function _oauth_common_authorize() {
   }
 
   $consumer = DrupalOAuthConsumer::load($token->consumer_key);
-  $contexts = oauth_common_authorization_contexts();
-  $context = $contexts[$consumer->context];
 
   // Redirect to the right form, or present an error.
   global $user;
@@ -87,7 +86,7 @@ function _oauth_common_authorize() {
       '@sitename' => variable_get('site_name', ''),
     );
 
-    $title = !empty($context['title']) ? $context['title'] : 'Authorize @appname';
+    $title = !empty($context->title) ? $context->title : 'Authorize @appname';
     drupal_set_title(t($title, $tvars));
 
     $form = array();
@@ -101,14 +100,14 @@ function _oauth_common_authorize() {
       '#value'  => $consumer->key,
     );
 
-    $message = !empty($context['message']) ? $context['message'] :
+    $message = !empty($context->authorization_options['message']) ? $context->authorization_options['message'] :
       'The application @appname wants to access @sitename on your behalf, check the permissions that you would like the application to have.';
     $form['message'] = array(
       '#type' => 'item',
       '#value' => t($message, $tvars),
     );
 
-    $message = !empty($context['warning']) ? $context['warning'] :
+    $message = !empty($context->authorization_options['warning']) ? $context->authorization_options['warning'] :
       'If you don\'t know what @appname is, or don\'t want to give it access to your content, just click here and we\'ll take you away from this page without granting @appname any access to @sitename.';
     $form['warning'] = array(
       '#type' => 'item',
@@ -118,9 +117,9 @@ function _oauth_common_authorize() {
       ),
     );
 
-    $disable_selection = !empty($context['disable_auth_level_selection']) && !empty($context['default_authorization_levels']) && $context['disable_auth_level_selection'];
+    $disable_selection = !empty($context->authorization_options['disable_auth_level_selection']) && !empty($context->authorization_options['default_authorization_levels']) && $context->authorization_options['disable_auth_level_selection'];
     if (!$disable_selection) {
-      $authorization_title = !empty($context['authorization_title']) ? $context['authorization_title'] :
+      $authorization_title = !empty($context->authorization_options['authorization_title']) ? $context->authorization_options['authorization_title'] :
         'Permissions';
       $form['authorization'] = array(
         '#type' => 'fieldset',
@@ -128,11 +127,10 @@ function _oauth_common_authorize() {
         '#options' => $auth_levels,
       );
 
-      $auth_levels = oauth_common_authorization_levels($consumer->context);
       $form['authorization']['levels'] = array(
         '#tree' => TRUE,
       );
-      foreach ($auth_levels as $name => $level) {
+      foreach ($context->authorization_levels as $name => $level) {
         $auth_opt = array(
           '#type' => 'checkbox',
           '#title' => t($level->title, $tvars),
@@ -145,7 +143,7 @@ function _oauth_common_authorize() {
       $form['authorization']['levels'] = array(
         '#tree' => TRUE,
       );
-      foreach ($context['default_authorization_levels'] as $level) {
+      foreach ($context->authorization_options['default_authorization_levels'] as $level) {
         $form['authorization']['levels'][$level] = array(
           '#type' => 'value',
           '#value' => $level,
@@ -153,7 +151,7 @@ function _oauth_common_authorize() {
       }
     }
 
-    $deny_title = !empty($context['deny_access_title']) ? $context['deny_access_title'] :
+    $deny_title = !empty($context->authorization_options['deny_access_title']) ? $context->authorization_options['deny_access_title'] :
       'Deny access';
     $form['deny'] = array(
       '#type'   => 'item',
@@ -163,7 +161,7 @@ function _oauth_common_authorize() {
       ),
     );
 
-    $grant_title = !empty($context['grant_access_title']) ? $context['grant_access_title'] :
+    $grant_title = !empty($context->authorization_options['grant_access_title']) ? $context->authorization_options['grant_access_title'] :
       'Grant access';
     $form['confirm'] = array(
       '#type'   => 'submit',
@@ -189,9 +187,9 @@ function _oauth_common_authorize_validate($form, &$form_state) {
   $got_permission = FALSE;
 
   $consumer = DrupalOAuthConsumer::load($values['oauth_consumer']);
-  $auth_levels = oauth_common_authorization_levels($consumer->context);
+  $context = oauth_common_context_load($consumer->context);
 
-  foreach ($auth_levels as $name => $level) {
+  foreach ($context->authorization_levels as $name => $level) {
     if ($values['levels'][$name]) {
       $got_permission = TRUE;
       break;
@@ -218,14 +216,14 @@ function _oauth_common_authorize_submit(&$form, &$form_state) {
   $token->authorized = 1;
   $token->services = array();
   $consumer = DrupalOAuthConsumer::load($token->consumer_key);
+  $context = oauth_common_context_load($consumer->context);
 
   // Add services
   if ($values['full_access']) { // TODO: Full access should be a configurable auth level
     $token->services[] = '*';
   }
   else {
-    $auth_levels = oauth_common_authorization_levels($consumer->context);
-    foreach ($auth_levels as $name => $level) {
+    foreach ($context->authorization_levels as $name => $level) {
       if ($values['levels'][$name]) {
         $token->services[] = $name;
       }
@@ -275,8 +273,8 @@ function _oauth_common_glue_url($parsed) {
  */
 function _oauth_common_request_token() {
   try {
-    $server = new DrupalOAuthServer();
     $req = DrupalOAuthRequest::from_request();
+    $server = new DrupalOAuthServer(oauth_common_context_from_request($req));
     print $server->fetch_request_token($req);
   }
   catch (OAuthException $e) {
@@ -290,16 +288,13 @@ function _oauth_common_request_token() {
  */
 function _oauth_common_access_token() {
   try {
-    $server = new DrupalOAuthServer();
     $req = DrupalOAuthRequest::from_request();
+    $context = oauth_common_context_from_request($req);
+    $server = new DrupalOAuthServer($context);
     $access_token = $server->fetch_access_token($req);
 
-    $consumer = DrupalOAuthConsumer::load($access_token->consumer_key);
-    $contexts = oauth_common_authorization_contexts();
-    $context = $contexts[$consumer->context];
-
     // Set the expiry time based on context settings or get parameter
-    $expires = !empty($context['access_token_lifetime']) ? time() + $context['access_token_lifetime'] : 0;
+    $expires = !empty($context->authorization_options['access_token_lifetime']) ? time() + $context->authorization_options['access_token_lifetime'] : 0;
     if ($_GET['expires'] && intval($_GET['expires'])) {
       $hint = intval($_GET['expires']);
       // Only accept more restrictive expiry times
@@ -334,8 +329,8 @@ function _oauth_common_user_applications($form_state, $account) {
   );
   $can_register_consumers = user_access('oauth register any consumers');
   if (!$can_register_consumers) {
-    foreach(oauth_common_authorization_contexts() as $context => $levels) {
-      $can_register_consumers = $can_register_consumers || user_access(sprintf('oauth register consumers in %s', $context));
+    foreach(oauth_common_context_load_all() as $context) {
+      $can_register_consumers = $can_register_consumers || user_access(sprintf('oauth register consumers in %s', $context->name));
     }
   }
   $ci = oauth_common_user_consumers($account->uid);

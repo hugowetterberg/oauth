@@ -19,7 +19,7 @@ class DrupalOAuthClient {
    */
   public function __construct($consumer, $request_token = NULL, $signature_method = NULL) {
     $this->consumer = $consumer;
-    $this->requestToken = $requestToken;
+    $this->requestToken = $request_token;
     $this->signatureMethod = $signature_method;
 
     // Set to the default signature method if no method was specified

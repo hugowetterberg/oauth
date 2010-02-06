@@ -506,7 +506,7 @@ class OAuthServer {
   /**
    * figure out the signature with some defaults
    */
-  private function get_signature_method(&$request) {
+  protected function get_signature_method(&$request) {
     $signature_method =
         @$request->get_parameter("oauth_signature_method");
     if (!$signature_method) {

@@ -111,6 +111,7 @@ class DrupalOAuthDataStore extends OAuthDataStore {
       'consumer_key'    => $consumer->key,
       'type'            => 'request',
       'uid'             => 0,
+      'provider_token'  => TRUE,
       'expires'         => time() + variable_get('oauth_common_request_token_lifetime', 7200),
     ));
     $token->write();
@@ -133,6 +134,7 @@ class DrupalOAuthDataStore extends OAuthDataStore {
         'type'            => 'access',
         'uid'             => $token_old->uid,
         'consumer_key'    => $consumer->key,
+        'provider_token'  => TRUE,
         'services'        => $token_old->services,
         'authorized'      => 1,
       ));
