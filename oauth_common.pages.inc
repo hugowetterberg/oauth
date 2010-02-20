@@ -707,9 +707,9 @@ function _oauth_common_user_applications_add($form_state, $account) {
   );
 
   $allowed_contexts = array();
-  foreach(oauth_common_authorization_contexts() as $context => $levels) {
+  foreach(oauth_common_context_list() as $context => $title) {
     if (user_access(sprintf('oauth register consumers in %s', $context))) {
-      $allowed_contexts[$context] = $context;
+      $allowed_contexts[$context] = $title;
     }
   }
 
