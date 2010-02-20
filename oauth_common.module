@@ -600,7 +600,7 @@ function oauth_common_context_list() {
   $return = array();
   $contexts = oauth_common_context_load_all();
   foreach ($contexts as $context) {
-    $return[$context->context] = $context->title;
+    $return[$context->name] = $context->title;
   }
   return $return;
 }
