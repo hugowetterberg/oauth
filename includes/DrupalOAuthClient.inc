@@ -10,8 +10,8 @@ class DrupalOAuthClient {
   /**
    * Creates an instance of the DrupalOAuthClient.
    *
-   * @param DrupalOAuthConsumerToken $consumer
-   *  The consumer token.
+   * @param DrupalOAuthConsumer $consumer
+   *  The consumer.
    * @param OAuthToken $request_token
    *  Optional. A request token to use.
    * @param OAuthSignatureMethod $signature_method
@@ -106,7 +106,7 @@ class DrupalOAuthClient {
     if ($callback_url) {
       $params['oauth_callback'] = $callback_url;
     }
-    return $this->consumer->provider_url . $endpoint . '?' . http_build_query($params, NULL, '&');
+    return $this->consumer->configuration['provider_url'] . $endpoint . '?' . http_build_query($params, NULL, '&');
   }
 
   /**
@@ -122,8 +122,8 @@ class DrupalOAuthClient {
    */
   public function getAccessToken($endpoint = NULL, $request_params = array()) {
     if (!$this->accessToken) {
-      if (empty($endpoint)) {
-        $endpoint = $this->consumer->access_endpoint;
+      if (empty($endpoint) && !empty($this->consumer->configuration['access_endpoint'])) {
+        $this->consumer->configuration['access_endpoint'];
       }
       if (empty($endpoint)) {
         $endpoint = '/oauth/access_token';
@@ -148,8 +148,9 @@ class DrupalOAuthClient {
 
   private function get($path, $use_token = FALSE, $params = array()) {
     $token = $use_token ? $this->requestToken : NULL;
+    $conf = $this->consumer->configuration;
     $req = OAuthRequest::from_consumer_and_token($this->consumer, $token,
-      "GET", $this->consumer->provider_url . $path, $params);
+      "GET", $conf['provider_url'] . $path, $params);
     $req->sign_request(self::signatureMethod(), $this->consumer, $token);
 
     $ch = curl_init();
@@ -167,7 +168,7 @@ class DrupalOAuthClient {
 
     $result = $this->interpretResponse($response);
     if ($result->responseCode != 200) {
-      throw new Exception('Failed to fetch data from url "' . $this->consumer->provider_url . $path . '" (HTTP response code ' . $result->responseCode . '): ' . $result->responseMessage, $result->responseCode);
+      throw new Exception('Failed to fetch data from url "' . $conf['provider_url'] . $path . '" (HTTP response code ' . $result->responseCode . '): ' . $result->responseMessage, $result->responseCode);
     }
 
     return $result->body;

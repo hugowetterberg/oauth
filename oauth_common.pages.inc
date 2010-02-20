@@ -31,7 +31,7 @@ function _oauth_common_authorized() {
   if (!empty($_GET['oauth_token'])) {
     $request_token = DrupalOAuthToken::load($_GET['oauth_token'], FALSE);
     if ($request_token) {
-      $consumer_token = DrupalOAuthConsumerToken::load($request_token->consumer_key);
+      $consumer_token = DrupalOAuthConsumer::load($request_token->consumer_key, FALSE);
       $client = new DrupalOAuthClient($consumer_token, $request_token);
 
       $access_token = $client->getAccessToken();
@@ -62,7 +62,7 @@ function _oauth_common_authorize() {
     return;
   }
 
-  $consumer = DrupalOAuthConsumer::load($token->consumer_key);
+  $consumer = DrupalOAuthConsumer::load($token->consumer_key, TRUE);
 
   // Redirect to the right form, or present an error.
   global $user;
@@ -186,7 +186,7 @@ function _oauth_common_authorize_validate($form, &$form_state) {
   $values = $form_state['values'];
   $got_permission = FALSE;
 
-  $consumer = DrupalOAuthConsumer::load($values['oauth_consumer']);
+  $consumer = DrupalOAuthConsumer::load($values['oauth_consumer'], TRUE);
   $context = oauth_common_context_load($consumer->context);
 
   foreach ($context->authorization_levels as $name => $level) {
@@ -215,7 +215,7 @@ function _oauth_common_authorize_submit(&$form, &$form_state) {
   $token->uid = $user->uid;
   $token->authorized = 1;
   $token->services = array();
-  $consumer = DrupalOAuthConsumer::load($token->consumer_key);
+  $consumer = DrupalOAuthConsumer::load($token->consumer_key, TRUE);
   $context = oauth_common_context_load($consumer->context);
 
   // Add services
@@ -333,7 +333,7 @@ function _oauth_common_user_applications($form_state, $account) {
       $can_register_consumers = $can_register_consumers || user_access(sprintf('oauth register consumers in %s', $context->name));
     }
   }
-  $ci = oauth_common_user_consumers($account->uid);
+  $ci = oauth_common_user_consumers($account->uid, TRUE);
   if (!empty($ci) || $can_register_consumers) {
     $apps = array(
       '#type' => 'fieldset',
@@ -382,7 +382,7 @@ function _oauth_common_user_applications($form_state, $account) {
     $consumers = array();
     foreach ($tokens as $token) {
       if (!isset($consumers[$token->consumer_key])) {
-        $consumers[$token->consumer_key] = DrupalOAuthConsumer::load($token->consumer_key);
+        $consumers[$token->consumer_key] = DrupalOAuthConsumer::load($token->consumer_key, TRUE);
       }
       $consumer = $consumers[$token->consumer_key];
 
@@ -707,9 +707,9 @@ function _oauth_common_user_applications_add($form_state, $account) {
   );
 
   $allowed_contexts = array();
-  foreach(oauth_common_authorization_contexts() as $context => $levels) {
+  foreach(oauth_common_context_list() as $context => $title) {
     if (user_access(sprintf('oauth register consumers in %s', $context))) {
-      $allowed_contexts[$context] = $context;
+      $allowed_contexts[$context] = $title;
     }
   }
 
@@ -737,7 +737,7 @@ function _oauth_common_user_applications_add_submit($form, $form_state) {
   $form_state['values']['callback_url'] = rtrim($form_state['values']['callback_url'], '/');
 
   $v = $form_state['values'];
-  $consumer = new DrupalOAuthConsumer(user_password(32), user_password(32), $v['callback_url'], $v);
+  $consumer = new DrupalOAuthConsumer(user_password(32), user_password(32), $v['callback_url'], TRUE, $v);
   $consumer->write();
 
   drupal_set_message(t('Added the application @name', array('@name' => $v['name'])));
