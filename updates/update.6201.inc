@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: update.6201.inc,v 1.1 2010/02/20 22:37:03 hugowetterberg Exp $
 
 /**
  * This update unifies the handling of provider and consumer consumer entries.
