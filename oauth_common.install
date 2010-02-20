@@ -108,12 +108,6 @@ function oauth_common_schema() {
         'length'      => 128,
         'not null'    => TRUE,
       ),
-      'type' => array(
-        'description' => t('The application type.'),
-        'type'        => 'varchar',
-        'length'      => 32,
-        'not null'    => TRUE,
-      ),
       'context' => array(
         'description' => t('The application context.'),
         'type'        => 'varchar',
@@ -127,8 +121,16 @@ function oauth_common_schema() {
         'length'      => 255,
         'not null'    => TRUE,
       ),
+      'configuration' => array(
+        'description' => t('Consumer configuration'),
+        'type'        => 'text',
+        'serialized'  => TRUE,
+        'size'        => 'big',
+        'not null'    => TRUE,
+        'object default' => array(),
+      ),
     ),
-    'primary key' => array('consumer_key'),
+    'primary key' => array('consumer_key', 'provider_consumer'),
     'index' => array(
       'user' => array('uid'),
     ),
@@ -211,44 +213,7 @@ function oauth_common_schema() {
       'consumer_key' => array('consumer_key', 'provider_token'),
     ),
   );
-  $schema['oauth_common_consumer_token'] = array(
-    'description' => t('Tokens stored on behalf of consumers for request and services accesses.'),
-    'fields' => array(
-      'token_key' => array(
-        'description' => t('Token key.'),
-        'type'        => 'varchar',
-        'length'      => 32,
-        'not null'    => TRUE
-      ),
-      'secret' => array(
-        'description' => t('Token secret.'),
-        'type'        => 'varchar',
-        'length'      => 32,
-        'not null'    => TRUE
-      ),
-      'uid' => array(
-        'description' => t('The user that\'s associated with the token, if any.'),
-        'type'        => 'int',
-        'unsigned'    => TRUE,
-        'not null'    => TRUE,
-        'default'     => 0,
-      ),
-      'provider_url' => array(
-        'description' => t('The url to the provider.'),
-        'type'        => 'varchar',
-        'length'      => 255,
-        'not null'    => TRUE,
-      ),
-      'access_endpoint' => array(
-        'description' => t('The endpoint to fetch the access token.'),
-        'type'        => 'varchar',
-        'length'      => 255,
-        'not null'    => TRUE,
-        'default'     => '',
-      ),
-    ),
-   'primary key' => array('token_key'),
-  );
+
   $schema['oauth_common_nonce'] = array(
     'description' => t('Stores timestamp against nonce for repeat attacks.'),
     'fields' => array(
@@ -325,4 +290,12 @@ function oauth_common_update_6100() {
 function oauth_common_update_6200() {
   module_load_include('6200.inc', 'oauth_common', 'updates/update');
   return _oauth_common_update_6200();
+}
+
+/**
+ * This update unifies the handling of provider and consumer consumer entries.
+ */
+function oauth_common_update_6201() {
+  module_load_include('6201.inc', 'oauth_common', 'updates/update');
+  return _oauth_common_update_6201();
 }

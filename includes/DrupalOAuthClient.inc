@@ -10,8 +10,8 @@ class DrupalOAuthClient {
   /**
    * Creates an instance of the DrupalOAuthClient.
    *
-   * @param DrupalOAuthConsumerToken $consumer
-   *  The consumer token.
+   * @param DrupalOAuthConsumer $consumer
+   *  The consumer.
    * @param OAuthToken $request_token
    *  Optional. A request token to use.
    * @param OAuthSignatureMethod $signature_method
