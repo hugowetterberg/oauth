@@ -58,9 +58,9 @@ function oauth_common_perm() {
 
   // Add seperate permissions for creating and
   // authorizing consumers in each context.
-  foreach(oauth_common_authorization_contexts() as $context => $levels) {
-    $permissions[] = sprintf('oauth register consumers in %s', $context);
-    $permissions[] = sprintf('oauth authorize consumers in %s', $context);
+  foreach(oauth_common_context_list() as $name => $title) {
+    $permissions[] = sprintf('oauth register consumers in %s', $name);
+    $permissions[] = sprintf('oauth authorize consumers in %s', $name);
   }
 
   return $permissions;
