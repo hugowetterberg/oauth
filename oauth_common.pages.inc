@@ -133,8 +133,8 @@ function oauth_common_form_authorize() {
       foreach ($context->authorization_levels as $name => $level) {
         $auth_opt = array(
           '#type' => 'checkbox',
-          '#title' => t($level->title, $tvars),
-          '#description' => t($level->description, $tvars),
+          '#title' => t($level['title'], $tvars),
+          '#description' => t($level['description'], $tvars),
         );
         $form['authorization']['levels'][$name] = $auth_opt;
       }
