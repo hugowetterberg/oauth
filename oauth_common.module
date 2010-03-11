@@ -37,10 +37,11 @@ function oauth_common_enable() {
  */
 function oauth_common_theme() {
   return array(
-    'oauth_common_context_list' => array(
-      'template' => 'oauth_common_context_list',
+    'oauth_common_auth_level' => array(
+      'template' => 'oauth_common_auth_level',
       'arguments' => array(
-        'contexts' => array(),
+        'element' => array(),
+        'value' => NULL,
       ),
     ),
   );

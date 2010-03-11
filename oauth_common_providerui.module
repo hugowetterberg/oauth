@@ -37,8 +37,8 @@ function oauth_common_providerui_menu() {
     'weight'         => 10,
   ) + $admin_base;
 
-  $menu['admin/settings/oauth/ahah/authlevel-add'] = array(
-    'page callback'  => 'oauth_common_edit_form_context_authlevel_ahah_add',
+  $menu['admin/settings/oauth/ahah/add-auth-level'] = array(
+    'page callback'  => 'oauth_common_ahah_add_auth_level',
     'type'           => MENU_CALLBACK,
   ) + $admin_base;
 

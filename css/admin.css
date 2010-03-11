@@ -1,0 +1,13 @@
+.oauth-common-left-panel {
+  float: left;
+  width: 50%;
+}
+
+.oauth-common-right-panel {
+  float: right;
+  width: 49.9%;
+}
+
+.oauth-common-auth-level .clear {
+  clear: both;
+}
