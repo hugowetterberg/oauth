@@ -37,10 +37,11 @@ function oauth_common_enable() {
  */
 function oauth_common_theme() {
   return array(
-    'oauth_common_context_list' => array(
-      'template' => 'oauth_common_context_list',
+    'oauth_common_auth_level' => array(
+      'template' => 'oauth_common_auth_level',
       'arguments' => array(
-        'contexts' => array(),
+        'element' => array(),
+        'value' => NULL,
       ),
     ),
   );
@@ -112,6 +113,11 @@ function oauth_common_menu() {
     'page arguments' => array(3),
     'type'           => MENU_LOCAL_TASK,
     'weight'         => 10,
+  ) + $admin_base;
+
+  $menu['admin/settings/oauth/ahah/add-auth-level'] = array(
+    'page callback'  => 'oauth_common_ahah_add_auth_level',
+    'type'           => MENU_CALLBACK,
   ) + $admin_base;
 
   $menu['admin/settings/oauth/%oauth_common_context/export'] = array(
