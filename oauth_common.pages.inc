@@ -80,7 +80,6 @@ function oauth_common_form_authorize() {
     }
 
     $tvars = array(
-      '@appname' => $consumer->name,
       '@user' => $user->name,
       '@appname' => $consumer->name,
       '@sitename' => variable_get('site_name', ''),
