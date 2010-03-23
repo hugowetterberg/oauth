@@ -54,11 +54,12 @@ function oauth_common_perm() {
     'oauth authorize any consumers',
     'oauth register any consumers',
     'administer oauth',
+    'administer consumers',
   );
 
   // Add seperate permissions for creating and
   // authorizing consumers in each context.
-  foreach(oauth_common_authorization_contexts() as $context => $levels) {
+  foreach(oauth_common_context_list() as $context => $title) {
     $permissions[] = sprintf('oauth register consumers in %s', $context);
     $permissions[] = sprintf('oauth authorize consumers in %s', $context);
   }
@@ -71,6 +72,7 @@ function oauth_common_perm() {
  */
 function oauth_common_menu() {
   $menu = array();
+
   $admin_base = array(
     'access arguments' => array('administer oauth'),
     'file' => 'oauth_common.admin.inc',
@@ -78,170 +80,66 @@ function oauth_common_menu() {
 
   $menu['admin/settings/oauth'] = array(
     'title' => 'OAuth',
-    'description' => 'The different context for authorization',
-    'page callback' => 'oauth_common_list_context',
+    'description' => 'Settings for OAuth',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_oauth_common_admin'),
     'type' => MENU_NORMAL_ITEM,
   ) + $admin_base;
-
-  $menu['admin/settings/oauth/list'] = array(
-    'title' => 'Contexts',
-    'description' => 'The different context for authorization',
-    'page callback' => 'oauth_common_list_context',
-    'type' => MENU_DEFAULT_LOCAL_TASK,
-  ) + $menu['admin/settings/oauth'];
 
   $menu['admin/settings/oauth/settings'] = array(
     'title' => 'Settings',
     'description' => 'Settings for OAuth',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('_oauth_common_admin'),
-    'type' => MENU_LOCAL_TASK,
-    'weight' => 5,
-  ) + $admin_base;
-
-  $menu['admin/settings/oauth/add'] = array(
-    'title'          => 'Add context',
-    'page callback'  => 'oauth_common_add_context',
-    'type'           => MENU_LOCAL_TASK,
-    'weight'         => 10,
-  ) + $admin_base;
-
-  $menu['admin/settings/oauth/%oauth_common_context/edit'] = array(
-    'title'          => 'Edit context',
-    'page callback'  => 'oauth_common_edit_context',
-    'page arguments' => array(3),
-    'type'           => MENU_LOCAL_TASK,
-    'weight'         => 10,
-  ) + $admin_base;
-
-  $menu['admin/settings/oauth/%oauth_common_context/export'] = array(
-    'title'          => 'Export context',
-    'page callback'  => 'drupal_get_form',
-    'page arguments' => array('oauth_common_export_context', 3),
-    'type'           => MENU_LOCAL_TASK,
-    'weight'         => 20,
-  ) + $admin_base;
-
-  $menu['admin/settings/oauth/%oauth_common_context/delete'] = array(
-    'title'          => 'Delete context',
-    'page callback'  => 'drupal_get_form',
-    'page arguments' => array('oauth_common_delete_confirm_context', 3),
-    'type'           => MENU_CALLBACK,
-  ) + $admin_base;
-
-  $menu['admin/settings/oauth/%oauth_common_context/disable'] = array(
-    'page callback'  => 'oauth_common_context',
-    'page arguments' => array(3),
-    'type'           => MENU_CALLBACK,
-  ) + $admin_base;
-
-  $menu['admin/settings/oauth/%oauth_common_context/enable'] = array(
-    'page callback'  => 'oauth_common_enable_context',
-    'page arguments' => array(3),
-    'type'           => MENU_CALLBACK,
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+    'weight' => 0,
   ) + $admin_base;
 
   // OAuth doesn't need different endpoints for the different context as all
   // actions are done with a specific consumer, which in itself is associated
   // with a context.
 
-  $page_base = array(
-    'access callback' => '_oauth_common_always_true',
+  $provider_base = array(
+    'access callback' => 'oauth_commmon_is_provider',
     'file' => 'oauth_common.pages.inc',
     'type' => MENU_CALLBACK,
   );
 
+  // The endpoint that consumers use to get a request token.
+  $menu['oauth/request_token'] = array(
+    'page callback' => 'oauth_common_callback_request_token',
+  ) + $provider_base;
+
+  // The page a user gets sent to to authorize a request token.
   $menu['oauth/authorize'] = array(
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('_oauth_common_authorize'),
-  ) + $page_base;
+    'page arguments' => array('oauth_common_form_authorize'),
+  ) + $provider_base;
 
-  $menu['oauth/authorized'] = array(
-    'title' => 'Authorization finished',
-    'page callback' => '_oauth_common_authorized',
-  ) + $page_base;
-
-  $menu['oauth/request_token'] = array(
-    'page callback' => '_oauth_common_request_token',
-  ) + $page_base;
-
-  $menu['oauth/request_token_authorized'] = array(
-    'page callback' => '_oauth_common_request_token_authorized',
-  ) + $page_base;
-
-  $menu['oauth/authorized'] = array(
-    'title' => 'Authorization finished',
-    'page callback' => '_oauth_common_authorized',
-  ) + $page_base;
-
+  // The endpoint that consumers use to get a access token.
   $menu['oauth/access_token'] = array(
-    'page callback' => '_oauth_common_access_token',
-  ) + $page_base;
+    'page callback' => 'oauth_common_callback_access_token',
+  ) + $provider_base;
 
-  $menu['user/%user/applications'] = array(
-    'title' => 'Applications',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('_oauth_common_user_applications', 1),
-    'access callback' => '_oauth_common_user_access',
-    'access arguments' => array(1),
-    'file' => 'oauth_common.pages.inc',
-    'type' => MENU_LOCAL_TASK,
-  );
-
-  $menu['user/%user/applications/add'] = array(
-    'title' => 'Add application',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('_oauth_common_user_applications_add', 1),
-    'access callback' => 'oauth_common_can_create_consumers',
+  // This page is used both in consumer and provider mode. For consumers it is
+  // the callback url and triggers hook_oauth_common_authorized(). For
+  // providers it is the page where users end up if no callback url exists.
+  $menu['oauth/authorized'] = array(
+    'title' => 'Authorization finished',
+    'page callback' => 'oauth_common_page_authorized',
+    'access arguments' => array('access content'),
     'file' => 'oauth_common.pages.inc',
     'type' => MENU_CALLBACK,
   );
 
-  $menu['user/%user/applications/%/edit'] = array(
-    'title' => 'Edit application',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('_oauth_common_user_applications_edit', 1, 3),
-    'access callback' => 'oauth_common_can_create_consumers',
-    'file' => 'oauth_common.pages.inc',
-    'type' => MENU_CALLBACK,
-  );
-
-  $menu['user/%user/applications/%/delete'] = array(
-    'title' => 'Delete application',
-    'page callback' =>'drupal_get_form',
-    'page arguments' => array('_oauth_common_user_applications_delete', 1, 3),
-    'access callback' => 'oauth_common_can_delete_consumer',
-    'file' => 'oauth_common.pages.inc',
-    'type' => MENU_CALLBACK,
-  );
-
-  $menu['user/%user/applications/authorization/%'] = array(
-    'title' => 'Edit authorization',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('_oauth_common_user_authorization_edit', 1, 4),
-    'access callback' => '_oauth_common_user_access',
-    'access arguments' => array(1, 'oauth authorize consumers'),
-    'file' => 'oauth_common.pages.inc',
-    'type' => MENU_CALLBACK,
-  );
-
-  $menu['user/%user/applications/authorization/%/delete'] = array(
-    'title' => 'Delete authorization',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('_oauth_common_user_authorization_delete', 1, 4),
-    // We always want to allow the user to delete a authorization, that
-    // shouldn't be a permission that can be rescinded.
-    'access callback' => 'user_edit_access',
-    'access arguments' => array(1),
-    'file' => 'oauth_common.pages.inc',
-    'type' => MENU_CALLBACK,
-  );
+  // TODO: Different structures makes sense depending on whether oauth_common is
+  // acting as a provider or as a consumer.
 
   $menu['oauth/test/valid-consumer'] = array(
     'file' => 'oauth_common.pages.inc',
     'page callback' => '_oauth_common_validate_request_callback',
     'page arguments' => array('consumer'),
-    'access arguments' => array('access content'),
+    'access callback' => 'oauth_commmon_is_provider',
     'type' => MENU_CALLBACK,
   );
 
@@ -249,11 +147,63 @@ function oauth_common_menu() {
     'file' => 'oauth_common.pages.inc',
     'page callback' => '_oauth_common_validate_request_callback',
     'page arguments' => array('access token'),
-    'access arguments' => array('access content'),
+    'access callback' => 'oauth_commmon_is_provider',
     'type' => MENU_CALLBACK,
   );
 
   return $menu;
+}
+
+/**
+ * Menu system wildcard loader for provider consumers.
+ *
+ * @param string $key
+ */
+function oauth_common_consumer_load($key) {
+  $consumer = DrupalOAuthConsumer::load($key, TRUE);
+  if (!$consumer) {
+    $consumer = FALSE;
+  }
+  return $consumer;
+}
+
+/**
+ * Menu system wildcard loader for provider tokens.
+ *
+ * @param string $key
+ */
+function oauth_common_provider_token_load($key) {
+  $consumer = DrupalOAuthToken::load($key, TRUE);
+  if (!$consumer) {
+    $consumer = FALSE;
+  }
+  return $consumer;
+}
+
+/**
+ * Menu system wildcard loader for consumer consumers.
+ *
+ * @param string $key
+ */
+function oauth_common_consumer_consumer_load($key) {
+  $consumer = DrupalOAuthConsumer::load($key, FALSE);
+  if (!$consumer) {
+    $consumer = FALSE;
+  }
+  return $consumer;
+}
+
+/**
+ * Menu system wildcard loader for consumer tokens.
+ *
+ * @param string $key
+ */
+function oauth_common_consumer_token_load($key) {
+  $consumer = DrupalOAuthToken::load($key, FALSE);
+  if (!$consumer) {
+    $consumer = FALSE;
+  }
+  return $consumer;
 }
 
 /**
@@ -387,6 +337,27 @@ function _oauth_common_user_access($user, $permission = NULL) {
 }
 
 /**
+ * Checks if the user has permission to edit the consumer. Edit access is
+ * granted if the user has the 'administer consumers' permission or may
+ * edit the account connected to the consumer.
+ *
+ * @param DrupalOAuthConsumer $consumer
+ * @return bool
+ */
+function oauth_common_can_edit_consumer($consumer) {
+  $may_edit = user_access('administer consumers');
+
+  // If the user doesn't have consumer admin privileges, check for account
+  // edit access.
+  if (!$may_edit && $consumer->uid) {
+    $user = user_load($consumer->uid);
+    $may_edit = user_edit_access($user);
+  }
+
+  return $may_edit;
+}
+
+/**
  * Deterines if a user has the necessary permissions to create consumers.
  *
  * @param object $account
@@ -402,31 +373,11 @@ function oauth_common_can_create_consumers($account = NULL) {
 
   $can_register_consumers = user_access('oauth register any consumers', $account);
   if (!$can_register_consumers) {
-    foreach(oauth_common_authorization_contexts() as $context => $levels) {
+    foreach(oauth_common_context_list() as $context => $title) {
       $can_register_consumers = $can_register_consumers || user_access(sprintf('oauth register consumers in %s', $context), $account);
     }
   }
   return $can_register_consumers;
-}
-
-/**
- * Deterines if a user has the necessary permissions to delete a consumer.
- *
- * @param object $account
- *  The user account to check permissions for. Defaults to the currently
- *  logged in user.
- * @return bool
- */
-function oauth_common_can_delete_consumer($consumer_key, $account = NULL, $provider_consumer=TRUE) {
-  global $user;
-  if (!$account) {
-    $account = $user;
-  }
-
-  $can_create = oauth_common_can_create_consumers($account);
-  $consumerobj = DrupalOAuthConsumer::load($consumer_key, $provider_consumer);
-
-  return $can_create && ($consumerobj->uid == $account->uid || user_access('administer users', $account));
 }
 
 /**
@@ -439,6 +390,24 @@ function oauth_common_can_delete_consumer($consumer_key, $account = NULL, $provi
  */
 function _oauth_common_always_true() {
   return TRUE;
+}
+
+/**
+ * Access callback that checks if a user may create authorizations in the
+ * consumers context.
+ *
+ * @param DrupalOAuthConsumer $consumer
+ * @return bool
+ */
+function oauth_common_can_authorize_consumer($consumer) {
+  return user_access(sprintf('oauth authorize consumers in %s', $consumer->context));
+}
+
+/**
+ * Check if oauth_common is acting as a provider.
+ */
+function oauth_commmon_is_provider() {
+  return variable_get('oauth_common_enable_provider', TRUE);
 }
 
 /**
@@ -482,6 +451,31 @@ function oauth_common_get_tokens($consumer_key, $type='access', $provider_tokens
     AND type = '%s',
     AND provider_token = %d", array(
       ':consumer_key' => $consumer_key,
+      ':type' => $type,
+      ':provider_token' => $provider_tokens,
+    ));
+  $tokens = array();
+  while ($token = DrupalOAuthToken::fromResult($res)) {
+    $tokens[] = $token;
+  }
+  return $tokens;
+}
+
+/**
+ * Gets the tokens for a user.
+ *
+ * @param string $uid
+ * @param string $type
+ * @return array
+ */
+function oauth_common_get_user_tokens($uid, $type='access', $provider_tokens=TRUE) {
+  $res = db_query("SELECT *
+    FROM {oauth_common_token}
+    WHERE uid = %d
+    AND type = '%s'
+    AND provider_token = %d", array(
+      ':uid' => $uid,
+      ':type' => $type,
       ':provider_token' => $provider_tokens,
     ));
   $tokens = array();
@@ -493,7 +487,7 @@ function oauth_common_get_tokens($consumer_key, $type='access', $provider_tokens
 
 /**
  * Create a new context with defaults appropriately set from schema.
- * 
+ *
  * @return stdClass
  *  An context initialized with the default values.
  */

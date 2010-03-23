@@ -5,11 +5,12 @@ class DrupalOAuthConsumer extends OAuthConsumer {
   public $uid = 0;
   public $provider_consumer = TRUE;
   public $name = '';
-  public $context = 'default';
+  public $context = '';
   public $created = 0;
   public $changed = 0;
   public $callback_url = 'oob';
   public $configuration = array();
+  public $in_database = FALSE;
 
   function __construct($key, $secret, $callback_url='oob', $provider_consumer=TRUE, $params=array()) {
     parent::__construct($key, $secret, $callback_url);
@@ -50,6 +51,7 @@ class DrupalOAuthConsumer extends OAuthConsumer {
     }
 
     drupal_write_record('oauth_common_consumer', $values, $primary);
+    $this->in_database = TRUE;
   }
 
   /**
@@ -112,6 +114,7 @@ class DrupalOAuthConsumer extends OAuthConsumer {
       if (!empty($data['configuration'])) {
         $data['configuration'] = unserialize($data['configuration']);
       }
+      $data['in_database'] = TRUE;
       return new DrupalOAuthConsumer($data['consumer_key'], $data['secret'], $data['callback_url'], $data['provider_consumer'], $data);
     }
     return NULL;

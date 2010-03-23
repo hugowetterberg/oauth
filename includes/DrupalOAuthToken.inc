@@ -11,7 +11,8 @@ class DrupalOAuthToken extends OAuthToken {
   public $services = array();
   public $authorized = 0;
   public $expires = 0;
-  
+  public $in_database = FALSE;
+
   public function __construct($key, $secret, $params=array()) {
     parent::__construct($key, $secret);
     foreach($params as $key => $value) {
@@ -46,6 +47,7 @@ class DrupalOAuthToken extends OAuthToken {
     }
 
     drupal_write_record('oauth_common_token', $values, $primary);
+    $this->in_database = TRUE;
   }
 
   /**
@@ -101,6 +103,7 @@ class DrupalOAuthToken extends OAuthToken {
   public static function fromResult($res) {
     if ($data = db_fetch_array($res)) {
       $data['services'] = json_decode($data['services']);
+      $data['in_database'] = TRUE;
       return new DrupalOAuthToken($data['token_key'], $data['secret'], $data);
     }
     return NULL;

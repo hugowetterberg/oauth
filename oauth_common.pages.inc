@@ -26,7 +26,7 @@ function _oauth_common_validate_request_callback($type, $unsigned=NULL) {
   exit;
 }
 
-function _oauth_common_authorized() {
+function oauth_common_page_authorized() {
   // If we have a outh_token we're acting as a consumer and just got authorized
   if (!empty($_GET['oauth_token'])) {
     $request_token = DrupalOAuthToken::load($_GET['oauth_token'], FALSE);
@@ -38,8 +38,8 @@ function _oauth_common_authorized() {
       if ($access_token) {
         $access_token->write();
         $request_token->delete();
+        module_invoke_all('oauth_common_authorized', $consumer_token, $access_token, $request_token);
       }
-      module_invoke_all('oauth_common_authorized', $consumer_token, $access_token, $request_token);
     }
   }
   return t('The application has been authorized');
@@ -48,7 +48,7 @@ function _oauth_common_authorized() {
 /**
  * Form for granting access to the consumer
  */
-function _oauth_common_authorize() {
+function oauth_common_form_authorize() {
   module_load_include('inc', 'oauth_common');
   $req = DrupalOAuthRequest::from_request();
   $context = oauth_common_context_from_request($req);
@@ -182,7 +182,7 @@ function _oauth_common_authorize() {
   }
 }
 
-function _oauth_common_authorize_validate($form, &$form_state) {
+function oauth_common_form_authorize_validate($form, &$form_state) {
   $values = $form_state['values'];
   $got_permission = FALSE;
 
@@ -203,7 +203,7 @@ function _oauth_common_authorize_validate($form, &$form_state) {
   }
 }
 
-function _oauth_common_authorize_submit(&$form, &$form_state) {
+function oauth_common_form_authorize_submit(&$form, &$form_state) {
   global $user;
   $values = $form_state['values'];
   // Unserialize the stored oauth parameters
@@ -271,7 +271,7 @@ function _oauth_common_glue_url($parsed) {
 /**
  * Generate a request token from the request.
  */
-function _oauth_common_request_token() {
+function oauth_common_callback_request_token() {
   try {
     $req = DrupalOAuthRequest::from_request();
     $server = new DrupalOAuthServer(oauth_common_context_from_request($req));
@@ -286,7 +286,7 @@ function _oauth_common_request_token() {
 /**
  * Get a access token for the request
  */
-function _oauth_common_access_token() {
+function oauth_common_callback_access_token() {
   try {
     $req = DrupalOAuthRequest::from_request();
     $context = oauth_common_context_from_request($req);
@@ -315,431 +315,4 @@ function _oauth_common_access_token() {
     drupal_set_header('HTTP/1.0 401 Unauthorized: ' . $e->getMessage());
     drupal_set_header(sprintf('WWW-Authenticate: OAuth realm="%s"', url('', array('absolute'=>TRUE))));
   }
-}
-
-function _oauth_common_user_applications($form_state, $account) {
-  drupal_set_title(check_plain($account->name));
-  module_load_include('inc', 'oauth_common');
-
-  $form = array(
-    'uid' => array(
-      '#type' => 'value',
-      '#value' => $account->uid,
-    ),
-  );
-  $can_register_consumers = user_access('oauth register any consumers');
-  if (!$can_register_consumers) {
-    foreach(oauth_common_context_load_all() as $context) {
-      $can_register_consumers = $can_register_consumers || user_access(sprintf('oauth register consumers in %s', $context->name));
-    }
-  }
-  $ci = oauth_common_user_consumers($account->uid, TRUE);
-  if (!empty($ci) || $can_register_consumers) {
-    $apps = array(
-      '#type' => 'fieldset',
-      '#title' => t('Applications'),
-    );
-
-    if (!empty($ci)) {
-      foreach ($ci as $consumer) {
-        $apps[$consumer->key] = array(
-          '#prefix' => '<div class="consumer-application"><h3>' . check_plain($consumer->name) . '</h3>',
-          '#suffix' => '</div>',
-          'context' => array(
-            '#type' => 'item',
-            '#title' => t('Context'),
-            '#value' => $consumer->context,
-          ),
-          'edit' => array(
-            '#type' => 'item',
-            '#value' => l(t('Edit'), 'user/' . $account->uid . '/applications/' . $consumer->key . '/edit'),
-          ),
-          'delete' => array(
-            '#type' => 'item',
-            '#value' => l(t('Delete'), 'user/' . $account->uid . '/applications/' . $consumer->key . '/delete'),
-          ),
-        );
-      }
-    }
-
-    if ($can_register_consumers) {
-      $apps['create_consumer'] = array(
-        '#type' => 'submit',
-        '#value' => 'Add application',
-      );
-    }
-
-    $form['applications'] = $apps;
-  }
-
-  if (user_access('oauth authorize consumers', $account)) {
-    $auth = array(
-      '#type' => 'fieldset',
-      '#title' => t('Authorizations'),
-    );
-
-    $tokens = oauth_common_user_access_tokens($account->uid);
-    $consumers = array();
-    foreach ($tokens as $token) {
-      if (!isset($consumers[$token->consumer_key])) {
-        $consumers[$token->consumer_key] = DrupalOAuthConsumer::load($token->consumer_key, TRUE);
-      }
-      $consumer = $consumers[$token->consumer_key];
-
-      $auth[$token->key] = array(
-        '#prefix' => '<div class="consumer-authorization">',
-        '#suffix' => '</div>',
-        'consumer_name' => array(
-          '#type' => 'item',
-          '#title' => t('Application'),
-          '#value' => check_plain($consumer->name),
-        ),
-        'access_key' => array(
-          '#type' => 'item',
-          '#title' => t('Token key'),
-          '#value' => $token->key,
-        ),
-        'remove_link' => array(
-          '#type' => 'item',
-          '#value' => l('Edit authorization', 'user/' . $account->uid .
-            '/applications/authorization/' . $token->key),
-        ),
-      );
-    }
-
-    $form['authorizations'] = $auth;
-  }
-
-  return $form;
-}
-
-function _oauth_common_user_applications_submit($form, $form_state) {
-  // Send the user to the application creation form
-  if ($form_state['clicked_button']['#id']=='edit-create-consumer') {
-    drupal_goto(sprintf('user/%d/applications/add', $form_state['values']['uid']));
-  }
-}
-
-function _oauth_common_user_applications_edit($form_state, $user, $consumer_key) {
-  // Get app info
-  $consumer = DrupalOAuthConsumer::load($consumer_key);
-
-  $form['name'] = array(
-    '#type' => 'item',
-    '#value' => check_plain($consumer->name),
-    '#prefix' => '<h3>',
-    '#suffix' => '</h3>',
-  );
-
-  $form['context'] = array(
-    '#type' => 'item',
-    '#title' => t('Context'),
-    '#value' => check_plain($consumer->context),
-  );
-
-  $form['created'] = array(
-    '#type' => 'item',
-    '#title' => t('Created'),
-    '#value' => format_date($consumer->created, 'medium'),
-  );
-
-  $form['edited'] = array(
-    '#type' => 'item',
-    '#title' => t('Edited'),
-    '#value' => format_date($consumer->changed, 'medium'),
-  );
-
-  $form['consumer_key'] = array(
-    '#type' => 'item',
-    '#title' => t('Consumer key'),
-    '#value' => $consumer->key,
-  );
-
-  $form['consumer_key_send'] = array(
-    '#type' => 'value',
-    '#value' => $consumer->key,
-  );
-
-  $form['consumer_secret'] = array(
-    '#type' => 'item',
-    '#title' => t('Consumer secret'),
-    '#value' => $consumer->secret,
-  );
-
-  $form['callback_url'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Callback URL'),
-    '#default_value' => isset($consumer->callback_url) ? $consumer->callback_url : '',
-  );
-
-  $form['save'] = array(
-    '#type' => 'submit',
-    '#title' => t('Save'),
-    '#default_value' => t('Save'),
-  );
-
-  return $form;
-}
-
-function _oauth_common_user_applications_edit_submit($form, &$form_state) {
-  // Add scheme if missing
-  if (preg_match('/^http:\/\/|https:\/\//', $form_state['values']['callback_url']) === 0) {
-    $form_state['values']['callback_url'] = 'http://' . $form_state['values']['callback_url'];
-  }
-
-  // Remove trailing slash
-  $form_state['values']['callback_url'] = rtrim($form_state['values']['callback_url'], '/');
-
-  $consumer = DrupalOAuthConsumer::load($form_state['values']['consumer_key_send']);
-  $consumer->callback_url = $form_state['values']['callback_url'];
-  $consumer->write(TRUE);
-}
-
-function _oauth_common_user_applications_delete($form_state, $user, $consumer_key) {
-  $consumer = DrupalOAuthConsumer::load($consumer_key);
-  $form = array(
-    'confirm' => array(
-      '#type' => 'item',
-      '#value' => t('Are you sure you want to delete application <strong>@a</strong>?', array('@a' => $consumer->name)),
-    ),
-    'consumer_key' => array(
-      '#type' => 'value',
-      '#value' => $consumer->key,
-    ),
-    'save' => array(
-      '#type' => 'submit',
-      '#title' => t('Delete'),
-      '#default_value' => t('Delete'),
-    ),
-  );
-
-  return $form;
-}
-
-function _oauth_common_user_applications_delete_submit($form, &$form_state) {
-  $consumer = DrupalOAuthConsumer::load($form_state['values']['consumer_key'] );
-  $consumer->delete();
-
-  drupal_goto('user/' . $consumer->uid . '/applications');
-}
-
-function _oauth_common_user_authorization_edit($form_state, $user, $key) {
-  $form = array();
-
-  $token = DrupalOAuthToken::load($key, TRUE);
-  $consumer = DrupalOAuthConsumer::load($token->consumer_key);
-
-  drupal_set_title(t('Authorization for @app', array('@app' => $consumer->name)));
-
-  $form['user'] = array(
-    '#type' => 'value',
-    '#value' => $user->uid,
-  );
-
-  $form['key'] = array(
-    '#type' => 'value',
-    '#value' => $token->key,
-  );
-
-  $form['authorized'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Authorized'),
-    '#default_value' => $token->authorized,
-  );
-
-  $form['created'] = array(
-    '#type' => 'item',
-    '#title' => t('Created'),
-    '#value' => format_date($token->created),
-  );
-
-  $form['changed'] = array(
-    '#type' => 'item',
-    '#title' => t('Changed'),
-    '#value' => format_date($token->changed),
-  );
-
-  $form['key_item'] = array(
-    '#type' => 'item',
-    '#title' => t('Key'),
-    '#value' => $token->key,
-  );
-
-  $form['allowed'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Permissions'),
-  );
-
-  oauth_common_permissions_form($user, $form['allowed'], $consumer, $token->services);
-
-  $form['delete'] = array(
-    '#type' => 'item',
-    '#value' => l(t('Delete'), sprintf('user/%d/applications/authorization/%s/delete', $user->uid, $token->key)),
-  );
-
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Save'),
-  );
-
-  return $form;
-}
-
-function _oauth_common_user_authorization_edit_submit($form, $form_state) {
-  $values = $form_state['values'];
-
-  // Collect the authorization levels
-  $services = array();
-  foreach ($values['levels'] as $level => $allowed) {
-    if ($allowed) {
-      $services[] = $level;
-    }
-  }
-
-  $token = DrupalOAuthToken::load($values['key'], TRUE);
-  $consumer = DrupalOAuthConsumer::load($token->consumer_key);
-
-  $token->services = $services;
-  $token->authorized = $values['authorized'];
-  $token->write(TRUE);
-
-  drupal_set_message(t('The @consumer token @token was updated.', array(
-    '@consumer' => $consumer->name,
-    '@token' => $token->key)));
-  drupal_goto(sprintf('user/%d/applications', $form_state['values']['user']));
-}
-
-function _oauth_common_user_authorization_delete($form_state, $user, $key) {
-  $token = DrupalOAuthToken::load($key, TRUE);
-  $consumer = DrupalOAuthConsumer::load($token->consumer_key);
-
-  drupal_set_title(t('Deleting authorization for "@title"', array(
-    '@title' => $consumer->name,
-  )));
-
-  $form = array(
-    'authorization' => array(
-      '#type' => 'value',
-      '#value' => $authorization,
-    ),
-  );
-
-  $form['user'] = array(
-    '#type' => 'value',
-    '#value' => $user->uid,
-  );
-
-  $form['key'] = array(
-    '#type' => 'value',
-    '#value' => $token->key,
-  );
-
-  $form['description'] = array(
-    '#type' => 'item',
-    '#value' => t('Are you sure that you want to delete the authorization for @name?', array(
-      '@name' => $consumer->name,
-    )),
-  );
-
-  $form['cancel'] = array(
-    '#type' => 'item',
-    '#value' => l(t('Cancel'), sprintf('user/%d/applications/authorization/%s', $user->uid, $token->key)),
-  );
-
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Delete'),
-  );
-
-  return $form;
-}
-
-function _oauth_common_user_authorization_delete_submit($form, $form_state) {
-  $token = DrupalOAuthToken::load($form_state['values']['key'], TRUE);
-  $consumer = DrupalOAuthConsumer::load($token->consumer_key);
-  $token->delete();
-  drupal_set_message(t('The @consumer token @token was deleted.', array(
-    '@consumer' => $consumer->name,
-    '@token' => $token->key)));
-  drupal_goto(sprintf('user/%d/applications', $form_state['values']['user']));
-}
-
-function oauth_common_permissions_form($account, &$form, $consumer, $default_services=array('*')) {
-  $tvars = array(
-    '@appname' => $consumer->name,
-    '@user' => $account->name,
-    '@sitename' => variable_get('site_name', ''),
-  );
-
-  $auth_levels = oauth_common_authorization_levels($consumer->context);
-
-  foreach ($auth_levels as $name => $level) {
-    $auth_opt = array(
-      '#type' => 'checkbox',
-      '#title' => t($level->title, $tvars),
-      '#description' => t($level->description, $tvars),
-      '#default_value' => in_array($name, $default_services),
-    );
-    $form['authorization']['levels'][$name] = $auth_opt;
-  }
-}
-
-function _oauth_common_user_applications_add($form_state, $account) {
-  $form = array();
-
-  $form = array(
-    'uid' => array(
-      '#type' => 'value',
-      '#value' => $account->uid,
-    ),
-  );
-
-  $form['name'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Application name'),
-    '#required' => TRUE,
-  );
-
-  $form['callback_url'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Callback url'),
-    '#required' => FALSE,
-  );
-
-  $allowed_contexts = array();
-  foreach(oauth_common_context_list() as $context => $title) {
-    if (user_access(sprintf('oauth register consumers in %s', $context))) {
-      $allowed_contexts[$context] = $title;
-    }
-  }
-
-  $form['context'] = array(
-    '#type' => 'select',
-    '#title' => t('Application context'),
-    '#options' => $allowed_contexts,
-  );
-
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => t('Create'),
-  );
-
-  return $form;
-}
-
-function _oauth_common_user_applications_add_submit($form, $form_state) {
-  // Add scheme if missing
-  if (preg_match('/^http:\/\/|https:\/\//', $form_state['values']['callback_url']) === 0) {
-    $form_state['values']['callback_url'] = 'http://' . $form_state['values']['callback_url'];
-  }
-
-  // Remove trailing slash
-  $form_state['values']['callback_url'] = rtrim($form_state['values']['callback_url'], '/');
-
-  $v = $form_state['values'];
-  $consumer = new DrupalOAuthConsumer(user_password(32), user_password(32), $v['callback_url'], TRUE, $v);
-  $consumer->write();
-
-  drupal_set_message(t('Added the application @name', array('@name' => $v['name'])));
-  drupal_goto(sprintf('user/%d/applications', $v['uid']));
 }

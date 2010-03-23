@@ -1,0 +1,8 @@
+name = OAuth Common Consumer UI
+description = Provides a UI for when OAuth Common is acting as a consumer.
+package = "OAuth"
+
+dependencies[] = oauth_common
+
+core = 6.x
+php = 5.2
