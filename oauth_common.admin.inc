@@ -290,7 +290,7 @@ function oauth_common_edit_form_context(&$form_state, $context) {
     $i++;
   }
 
-  $form['athorization_level_count'] = array(
+  $form['authorization_level_count'] = array(
     '#type' => 'value',
     '#value' => $i,
   );
@@ -378,8 +378,8 @@ function oauth_common_ahah_add_auth_level() {
   $cached_form_state = array();
   $form = form_get_cache($_POST['form_build_id'], $cached_form_state);
   $context = $form['context_object']['#value'];
-  $idx = $form['athorization_level_count']['#value'];
-  $form['athorization_level_count']['#value'] = $idx + 1;
+  $idx = $form['authorization_level_count']['#value'];
+  $form['authorization_level_count']['#value'] = $idx + 1;
   $level = oauth_common_edit_form_auth_level($context, $idx, t('Authorization level'));
   $form['authorization_levels'][] = $level;
 
@@ -426,7 +426,7 @@ function oauth_common_edit_form_context_validate(&$form, &$form_state) {
   $levels = array();
   $auth_count = $values['authorization_level_count'];
   $default_exists = FALSE;
-  $level_count = $values['athorization_level_count'];
+  $level_count = $values['authorization_level_count'];
   for ($idx = 0; $idx < $level_count; $idx++) {
     $level = _oauth_common_auth_level_from_values($idx, $values);
 
@@ -441,8 +441,8 @@ function oauth_common_edit_form_context_validate(&$form, &$form_state) {
       if (empty($level['title'])) {
         form_error($form["l_{$idx}_title"], t('Authorization levels must have a title.'));
       }
-      $default_exists = $default_exists || $level['lvl_default_' . $idx];
-      $levels[$level['lvl_name_' . $idx]] = TRUE;
+      $default_exists = $default_exists || $level['default'];
+      $levels[$level['name']] = TRUE;
     }
   }
 
@@ -511,7 +511,7 @@ function oauth_common_edit_form_context_submit($form, &$form_state) {
   // Set the auth levels and default levels for the context
   $levels = array();
   $default_levels = array();
-  $level_count = $values['athorization_level_count'];
+  $level_count = $values['authorization_level_count'];
   for ($idx = 0; $idx < $level_count; $idx++) {
     $level = _oauth_common_auth_level_from_values($idx, $values);
     if (!empty($level['name']) && !$level['delete']) {
@@ -519,6 +519,7 @@ function oauth_common_edit_form_context_submit($form, &$form_state) {
       if ($level['default']) {
         $default_levels[] = $name;
       }
+      $levels[$name] = $level;
     }
   }
   $context->authorization_levels = $levels;
