@@ -79,6 +79,25 @@ function oauth_common_form_authorize() {
       return drupal_access_denied();
     }
 
+    if (!empty($context->authorization_options['automatic_authorization']) && $context->authorization_options['automatic_authorization'] && !empty($consumer->callback_url)) {
+      // Authorize the request token
+      $token->uid = $user->uid;
+      $token->authorized = 1;
+      $token->services = $context->authorization_options['default_authorization_levels'];
+      $token->write(TRUE);
+
+      // Pick the callback url apart and add the token parameter
+      $callback = parse_url($consumer->callback_url);
+      $query = array();
+      parse_str($callback['query'], $query);
+      $query['oauth_token'] = $token->key;
+      $callback['query'] = http_build_query($query, 'idx_', '&');
+
+      // Return to the consumer site
+      header('Location: ' . _oauth_common_glue_url($callback), TRUE, 302);
+      exit;
+    }
+
     $tvars = array(
       '@user' => $user->name,
       '@appname' => $consumer->name,
