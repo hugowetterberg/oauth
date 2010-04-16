@@ -188,17 +188,19 @@ function oauth_common_form_authorize_validate($form, &$form_state) {
   $consumer = DrupalOAuthConsumer::load($values['oauth_consumer'], TRUE);
   $context = oauth_common_context_load($consumer->context);
 
-  foreach ($context->authorization_levels as $name => $level) {
-    if ($values['levels'][$name]) {
-      $got_permission = TRUE;
-      break;
+  if (!$context->authorization_options['disable_auth_level_selection']) {
+    foreach ($context->authorization_levels as $name => $level) {
+      if ($values['levels'][$name]) {
+        $got_permission = TRUE;
+        break;
+      }
     }
-  }
 
-  $got_permission = $got_permission || $values['full_access']; // TODO: Full access should be a configurable auth level
+    $got_permission = $got_permission;
 
-  if (!$got_permission) {
-    form_set_error('confirm', t('You haven\'t given the application access to anything. Click on "Deny access" or just close this window if you don\'t want to authorize it.'));
+    if (!$got_permission) {
+      form_set_error('confirm', t('You haven\'t given the application access to anything. Click on "Deny access" or just close this window if you don\'t want to authorize it.'));
+    }
   }
 }
 
