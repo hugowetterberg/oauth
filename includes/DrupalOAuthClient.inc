@@ -149,11 +149,12 @@ class DrupalOAuthClient {
   }
 
   private function get($path, $use_token = FALSE, $params = array()) {
+    //TODO: Make it possible to send the params as headers
     $token = $use_token ? $this->requestToken : NULL;
     $conf = $this->consumer->configuration;
     $req = OAuthRequest::from_consumer_and_token($this->consumer, $token,
       "GET", $conf['provider_url'] . $path, $params);
-    $req->sign_request(self::signatureMethod(), $this->consumer, $token);
+    $req->sign_request($this->signatureMethod, $this->consumer, $token);
 
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $req->to_url());
@@ -170,7 +171,7 @@ class DrupalOAuthClient {
 
     $result = $this->interpretResponse($response);
     if ($result->responseCode != 200) {
-      throw new Exception('Failed to fetch data from url "' . $conf['provider_url'] . $path . '" (HTTP response code ' . $result->responseCode . '): ' . $result->responseMessage, $result->responseCode);
+      throw new Exception('Failed to fetch data from url "' . $conf['provider_url'] . $path . '" (HTTP response code ' . $result->responseCode . ' ' . $result->responseMessage . '): ' . $result->body, $result->responseCode);
     }
 
     return $result->body;
