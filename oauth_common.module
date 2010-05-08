@@ -429,6 +429,7 @@ function oauth_common_get_request_token($consumer_token, $request_endpoint='/oau
   $client = new DrupalOAuthClient($consumer_token);
   $request_token = $client->getRequestToken($request_endpoint);
   $request_token->write();
+  //TODO: Isn't the endpoint defined as the second argument?
   return $client->getAuthorizationUrl($authorize_endpoint);
 }
 
