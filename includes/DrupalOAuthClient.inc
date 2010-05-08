@@ -24,7 +24,13 @@ class DrupalOAuthClient {
 
     // Set to the default signature method if no method was specified
     if (!$this->signatureMethod) {
-      $this->signatureMethod = self::signatureMethod();
+      if (!empty($this->consumer->configuration['signature_method'])) {
+        $signature_method = substr(strtolower($this->consumer->configuration['signature_method']), 5);
+      }
+      else {
+        $signature_method = 'sha512';
+      }
+      $this->signatureMethod = self::signatureMethod($signature_method);
     }
   }
 
