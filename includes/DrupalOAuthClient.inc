@@ -122,11 +122,13 @@ class DrupalOAuthClient {
    */
   public function getAccessToken($endpoint = NULL, $request_params = array()) {
     if (!$this->accessToken) {
-      if (empty($endpoint) && !empty($this->consumer->configuration['access_endpoint'])) {
-        $this->consumer->configuration['access_endpoint'];
-      }
       if (empty($endpoint)) {
-        $endpoint = '/oauth/access_token';
+        if (!empty($this->consumer->configuration['access_endpoint'])) {
+          $endpoint = $this->consumer->configuration['access_endpoint'];
+        }
+        else {
+          $endpoint = '/oauth/access_token';
+        }
       }
       $response = $this->get($endpoint, TRUE, $request_params);
       $params = array();
