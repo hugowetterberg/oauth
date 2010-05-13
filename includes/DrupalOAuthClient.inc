@@ -144,11 +144,16 @@ class DrupalOAuthClient {
         throw new Exception('No valid access token was returned');
       }
 
-      $this->accessToken = new DrupalOAuthToken($params['oauth_token'], $params['oauth_token_secret'], array(
-        'type' => 'access',
-        'consumer_key' => $this->consumer->key,
-        'provider_token' => FALSE,
-      ));
+      // Check if we've has recieved this token previously and if so use the old one
+      $this->accessToken = DrupalOAuthToken::load($params['oauth_token'], FALSE);
+      //TODO: Can a secret change even though the token doesn't? If so it needs to be changed.
+      if (!$this->accessToken) {
+        $this->accessToken = new DrupalOAuthToken($params['oauth_token'], $params['oauth_token_secret'], array(
+          'type' => 'access',
+          'consumer_key' => $this->consumer->key,
+          'provider_token' => FALSE,
+        ));
+      }
     }
 
     return clone $this->accessToken;

@@ -36,7 +36,10 @@ function oauth_common_page_authorized() {
 
       $access_token = $client->getAccessToken();
       if ($access_token) {
-        $access_token->write();
+        // We recieved an old token - don't update
+        if (!$access_token->in_database) {
+          $access_token->write();
+        }
         $request_token->delete();
         module_invoke_all('oauth_common_authorized', $consumer_token, $access_token, $request_token);
       }

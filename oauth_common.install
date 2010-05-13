@@ -207,6 +207,8 @@ function oauth_common_schema() {
         'default'     => 0,
       ),
     ),
+    //TODO: The OAuth standard doesn't say that a token has to be unique - especially not across
+    //      different providers and consumers
    'primary key' => array('token_key', 'provider_token'),
    'indexes' => array(
       'token_key_type' => array('token_key', 'provider_token', 'type'),
