@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: update.6100.inc,v 1.1 2010/05/20 16:16:05 hugowetterberg Exp $
 
 /**
  * This update adds the concept of contexts for consumers and authorization levels.

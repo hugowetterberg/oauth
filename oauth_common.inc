@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: oauth_common.inc,v 1.1 2010/05/20 16:16:05 hugowetterberg Exp $
 
 /**
  * Return information about consumers related to a user.
