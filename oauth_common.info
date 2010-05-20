@@ -1,4 +1,4 @@
-; $Id: oauth_common.info,v 1.1 2010/05/20 16:16:05 hugowetterberg Exp $
+; $Id: oauth_common.info,v 1.2 2010/05/20 16:27:38 hugowetterberg Exp $
 name = OAuth
 description = Provides OAuth functionality
 package = "OAuth"
