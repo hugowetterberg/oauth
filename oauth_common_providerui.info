@@ -1,5 +1,5 @@
-name = OAuth Common Provider UI
-description = Provides a UI for when OAuth Common is acting as a provider.
+name = OAuth Provider UI
+description = Provides a UI for when OAuth is acting as a provider.
 package = "OAuth"
 
 dependencies[] = oauth_common

@@ -1,6 +1,6 @@
 ; $Id$
-name = OAuth Common
-description = Provides common OAuth functionality
+name = OAuth
+description = Provides OAuth functionality
 package = "OAuth"
 
 dependencies[] = autoload
