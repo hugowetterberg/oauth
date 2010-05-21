@@ -1,4 +1,7 @@
 <?php
+// $Id$
+
+//TODO: Add support for OAuth in headers
 
 /**
  * Implementation hook_autoload_info().
