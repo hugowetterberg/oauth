@@ -70,9 +70,9 @@ class DrupalOAuthClient {
    * @return DrupalOAuthToken
    *  The returned request token.
    */
-  public function getRequestToken($endpoint = '/oauth/request_token', $request_params = array()) {
+  public function getRequestToken($endpoint = '/oauth/request_token', $request_params = array(), $realm = NULL, $get_method = FALSE) {
     if (!$this->requestToken) {
-      $response = $this->get($endpoint, FALSE, $request_params);
+      $response = $this->get($endpoint, FALSE, $request_params, $realm, $get_method);
       $params = array();
       parse_str($response, $params);
 
@@ -126,7 +126,7 @@ class DrupalOAuthClient {
    * @return DrupalOAuthToken
    *  The access token.
    */
-  public function getAccessToken($endpoint = NULL, $request_params = array()) {
+  public function getAccessToken($endpoint = NULL, $request_params = array(), $realm = NULL, $get_method = FALSE) {
     if (!$this->accessToken) {
       if (empty($endpoint)) {
         if (!empty($this->consumer->configuration['access_endpoint'])) {
@@ -136,7 +136,7 @@ class DrupalOAuthClient {
           $endpoint = '/oauth/access_token';
         }
       }
-      $response = $this->get($endpoint, TRUE, $request_params);
+      $response = $this->get($endpoint, TRUE, $request_params, $realm, $get_method);
       $params = array();
       parse_str($response, $params);
 
@@ -159,16 +159,39 @@ class DrupalOAuthClient {
     return clone $this->accessToken;
   }
 
-  private function get($path, $use_token = FALSE, $params = array()) {
-    //TODO: Make it possible to send the params as headers
+  private function get($path, $use_token = FALSE, $params = array(), $realm = NULL, $get_method = FALSE) {
     $token = $use_token ? $this->requestToken : NULL;
     $conf = $this->consumer->configuration;
+    //TODO: Add callback in this request?
     $req = OAuthRequest::from_consumer_and_token($this->consumer, $token,
-      "GET", $conf['provider_url'] . $path, $params);
+      $get_method ? 'GET' : 'POST', $conf['provider_url'] . $path, $params);
     $req->sign_request($this->signatureMethod, $this->consumer, $token);
 
+    $url = $req->get_normalized_http_url();
+    $params = array();
+    foreach ($req->get_parameters() as $param_key => $param_value) {
+      if (substr($param_key, 0, 5) != 'oauth') {
+        $params[$param_key] = $param_value;
+      }
+    }
+    if (!empty($params)) {
+      $url .= '?' . http_build_query($params);
+    }
+
+    $headers = array(
+      'Accept: application/x-www-form-urlencoded',
+      $req->to_header($realm),
+    );
+
     $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, $req->to_url());
+    curl_setopt($ch, CURLOPT_URL, $url);
+    if (!$get_method) {
+      curl_setopt($ch, CURLOPT_POST, 1);
+      curl_setopt($ch, CURLOPT_POSTFIELDS, '');
+    }
+    //TODO: Add version number for this module to the user agent
+    curl_setopt($ch, CURLOPT_USERAGENT, 'Drupal/' . VERSION . ' OAuth');
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
     curl_setopt($ch, CURLOPT_HEADER, 1);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 
