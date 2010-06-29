@@ -156,6 +156,9 @@ class DrupalOAuthClient {
           $endpoint = '/oauth/access_token';
         }
       }
+      if (empty($realm) && !empty($this->consumer->configuration['authentication_realm'])) {
+        $realm = $this->consumer->configuration['authentication_realm'];
+      }
       if ($this->version > OAUTH_COMMON_VERSION_1 && $verifier !== NULL) {
         $request_params['oauth_verifier'] = $verifier;
       }
