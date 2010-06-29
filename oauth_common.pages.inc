@@ -34,7 +34,9 @@ function oauth_common_page_authorized() {
       $consumer_token = DrupalOAuthConsumer::load($request_token->consumer_key, FALSE);
       $client = new DrupalOAuthClient($consumer_token, $request_token);
 
-      $access_token = $client->getAccessToken();
+      $verifier = isset($_GET['oauth_verifier']) ? $_GET['oauth_verifier'] : NULL;
+
+      $access_token = $client->getAccessToken($endpoint = NULL, array(), NULL, FALSE, $verifier);
       if ($access_token) {
         // We recieved an old token - don't update
         if (!$access_token->in_database) {

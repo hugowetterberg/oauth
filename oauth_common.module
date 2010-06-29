@@ -1,6 +1,9 @@
 <?php
 // $Id$
 
+define('OAUTH_COMMON_VERSION_1', 1);     // The original 1.0 spec
+define('OAUTH_COMMON_VERSION_1_RFC', 2); // The RFC 5849 1.0 spec
+
 //TODO: Add support for OAuth in headers
 
 /**

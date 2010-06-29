@@ -2,6 +2,8 @@
 // $Id$
 
 class DrupalOAuthClient {
+  public $version = OAUTH_COMMON_VERSION_1_RFC;
+
   private $consumer;
   private $requestToken;
   private $accessToken;
@@ -17,10 +19,14 @@ class DrupalOAuthClient {
    * @param OAuthSignatureMethod $signature_method
    *  Optional. The signature method to use.
    */
-  public function __construct($consumer, $request_token = NULL, $signature_method = NULL) {
+  public function __construct($consumer, $request_token = NULL, $signature_method = NULL, $version = NULL) {
     $this->consumer = $consumer;
     $this->requestToken = $request_token;
     $this->signatureMethod = $signature_method;
+
+    if ($version) {
+      $this->version = $version;
+    }
 
     // Set to the default signature method if no method was specified
     if (!$this->signatureMethod) {
@@ -70,8 +76,12 @@ class DrupalOAuthClient {
    * @return DrupalOAuthToken
    *  The returned request token.
    */
-  public function getRequestToken($endpoint = '/oauth/request_token', $request_params = array(), $realm = NULL, $get_method = FALSE) {
+  public function getRequestToken($endpoint = '/oauth/request_token', $request_params = array(), $realm = NULL, $get_method = FALSE, $callback_url = NULL) {
+    //TODO: Restructure this function - use an options array
     if (!$this->requestToken) {
+      if ($this->version > OAUTH_COMMON_VERSION_1) {
+        $request_params['oauth_callback'] = $callback_url ? $callback_url : 'oob';
+      }
       $response = $this->get($endpoint, array(
           'params' => $request_params,
           'realm' => $realm,
@@ -84,10 +94,15 @@ class DrupalOAuthClient {
         throw new Exception('No valid request token was returned');
       }
 
+      if ($this->version > OAUTH_COMMON_VERSION_1 && empty($params['oauth_callback_confirmed'])) {
+        $this->version = OAUTH_1;
+      }
+
       $this->requestToken = new DrupalOAuthToken($params['oauth_token'], $params['oauth_token_secret'], array(
         'type' => 'request',
         'consumer_key' => $this->consumer->key,
         'provider_token' => FALSE,
+        'version' => $this->version,
       ));
     }
 
@@ -113,7 +128,7 @@ class DrupalOAuthClient {
     $params = array_merge($request_params, array(
       'oauth_token' => $this->requestToken->key,
     ));
-    if ($callback_url) {
+    if ($this->version == OAUTH_COMMON_VERSION_1 && $callback_url) {
       $params['oauth_callback'] = $callback_url;
     }
     //TODO: What if $endpoint has query parameters?
@@ -131,7 +146,7 @@ class DrupalOAuthClient {
    * @return DrupalOAuthToken
    *  The access token.
    */
-  public function getAccessToken($endpoint = NULL, $request_params = array(), $realm = NULL, $get_method = FALSE) {
+  public function getAccessToken($endpoint = NULL, $request_params = array(), $realm = NULL, $get_method = FALSE, $verifier = NULL) {
     if (!$this->accessToken) {
       if (empty($endpoint)) {
         if (!empty($this->consumer->configuration['access_endpoint'])) {
@@ -140,6 +155,9 @@ class DrupalOAuthClient {
         else {
           $endpoint = '/oauth/access_token';
         }
+      }
+      if ($this->version > OAUTH_COMMON_VERSION_1 && $verifier !== NULL) {
+        $request_params['oauth_verifier'] = $verifier;
       }
       $response = $this->get($endpoint, array(
           'token' => TRUE,
