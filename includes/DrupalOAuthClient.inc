@@ -72,7 +72,11 @@ class DrupalOAuthClient {
    */
   public function getRequestToken($endpoint = '/oauth/request_token', $request_params = array(), $realm = NULL, $get_method = FALSE) {
     if (!$this->requestToken) {
-      $response = $this->get($endpoint, FALSE, $request_params, $realm, $get_method);
+      $response = $this->get($endpoint, array(
+          'params' => $request_params,
+          'realm' => $realm,
+          'get' => $get_method,
+        ));
       $params = array();
       parse_str($response, $params);
 
@@ -112,7 +116,8 @@ class DrupalOAuthClient {
     if ($callback_url) {
       $params['oauth_callback'] = $callback_url;
     }
-    return $this->consumer->configuration['provider_url'] . $endpoint . '?' . http_build_query($params, NULL, '&');
+    //TODO: What if $endpoint has query parameters?
+    return $this->getAbsolutePath($endpoint) . '?' . http_build_query($params, NULL, '&');
   }
 
   /**
@@ -136,7 +141,12 @@ class DrupalOAuthClient {
           $endpoint = '/oauth/access_token';
         }
       }
-      $response = $this->get($endpoint, TRUE, $request_params, $realm, $get_method);
+      $response = $this->get($endpoint, array(
+          'token' => TRUE,
+          'params' => $request_params,
+          'realm' => $realm,
+          'get' => $get_method,
+        ));
       $params = array();
       parse_str($response, $params);
 
@@ -159,12 +169,43 @@ class DrupalOAuthClient {
     return clone $this->accessToken;
   }
 
-  private function get($path, $use_token = FALSE, $params = array(), $realm = NULL, $get_method = FALSE) {
-    $token = $use_token ? $this->requestToken : NULL;
-    $conf = $this->consumer->configuration;
+  /**
+   * Make an OAuth request.
+   *
+   * @param string $path
+   *   The path being requested.
+   *     - If you provide the full URL (e.g. "http://example.com/oauth/request_token"),
+   *       then it will be used.
+   *     - If you provide only the path (e.g. "oauth/request_token"), it will
+   *       be converted into a full URL by prepending the provider_url.
+   * @param array $options
+   *   An associative array of additional options, with the following keys:
+   *     - 'token' (default FALSE)
+   *       Whether a token should be used or not.
+   *     - 'params'
+   *       An associative array of parameters that should be included in the
+   *       request.
+   *     - 'realm'
+   *       A string to be used as the authentication realm.
+   *     - 'get' (default FALSE)
+   *       Whether the request should be a GET request instead of a POST.
+   * @return string
+   *   a string containing the response body.
+   */
+  private function get($path, $options = array()) {
+    $options += array(
+        'token' => FALSE,
+        'params' => array(),
+        'realm' => NULL,
+        'get' => FALSE,
+      );
+
+    $token = $options['token'] ? $this->requestToken : NULL;
+    $path = $this->getAbsolutePath($path);
+
     //TODO: Add callback in this request?
     $req = OAuthRequest::from_consumer_and_token($this->consumer, $token,
-      $get_method ? 'GET' : 'POST', $conf['provider_url'] . $path, $params);
+      $options['get'] ? 'GET' : 'POST', $path, $options['params']);
     $req->sign_request($this->signatureMethod, $this->consumer, $token);
 
     $url = $req->get_normalized_http_url();
@@ -180,12 +221,12 @@ class DrupalOAuthClient {
 
     $headers = array(
       'Accept: application/x-www-form-urlencoded',
-      $req->to_header($realm),
+      $req->to_header($options['realm']),
     );
 
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $url);
-    if (!$get_method) {
+    if (!$options['get']) {
       curl_setopt($ch, CURLOPT_POST, 1);
       curl_setopt($ch, CURLOPT_POSTFIELDS, '');
     }
@@ -205,10 +246,33 @@ class DrupalOAuthClient {
 
     $result = $this->interpretResponse($response);
     if ($result->responseCode != 200) {
-      throw new Exception('Failed to fetch data from url "' . $conf['provider_url'] . $path . '" (HTTP response code ' . $result->responseCode . ' ' . $result->responseMessage . '): ' . $result->body, $result->responseCode);
+      throw new Exception('Failed to fetch data from url "' . $path . '" (HTTP response code ' . $result->responseCode . ' ' . $result->responseMessage . '): ' . $result->body, $result->responseCode);
     }
 
     return $result->body;
+  }
+
+  /**
+   * Makes sure a path is an absolute path
+   *
+   * Prepends provider url if the path isn't absolute.
+   *
+   * @param string $path
+   *  The path to make absolute.
+   * @return string
+   *  The absolute path.
+   */
+  private function getAbsolutePath($path) {
+    $protocols = array(
+      'http',
+      'https'
+    );
+    $protocol = strpos($path, '://');
+    $protocol = $protocol ? substr($path, 0, $protocol) : '';
+    if (!in_array($protocol, $protocols)) {
+      $path = $this->consumer->configuration['provider_url'] . $path;
+    }
+    return $path;
   }
 
   private function interpretResponse($res) {
