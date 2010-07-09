@@ -2,10 +2,10 @@
 // $Id$
 
 class DrupalOAuthClient {
-  private $consumer;
-  private $requestToken;
-  private $accessToken;
-  private $signatureMethod;
+  protected $consumer;
+  protected $requestToken;
+  protected $accessToken;
+  protected $signatureMethod;
 
   /**
    * Creates an instance of the DrupalOAuthClient.
@@ -146,12 +146,12 @@ class DrupalOAuthClient {
     return clone $this->accessToken;
   }
 
-  private function get($path, $use_token = FALSE, $params = array()) {
+  protected function get($path, $use_token = FALSE, $params = array()) {
     $token = $use_token ? $this->requestToken : NULL;
     $conf = $this->consumer->configuration;
     $req = OAuthRequest::from_consumer_and_token($this->consumer, $token,
       "GET", $conf['provider_url'] . $path, $params);
-    $req->sign_request(self::signatureMethod(), $this->consumer, $token);
+    $req->sign_request($this->signatureMethod, $this->consumer, $token);
 
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $req->to_url());
@@ -174,7 +174,7 @@ class DrupalOAuthClient {
     return $result->body;
   }
 
-  private function interpretResponse($res) {
+  protected function interpretResponse($res) {
     list($headers, $body) = preg_split('/\r\n\r\n/', $res, 2);
 
     $obj = (object)array(
