@@ -19,14 +19,14 @@ function oauth_common_autoload_info() {
     'DrupalOAuthToken'          => array('file' => 'includes/DrupalOAuthToken.inc'),
     'DrupalOAuthConsumer'       => array('file' => 'includes/DrupalOAuthConsumer.inc'),
     'OAuthSignatureMethod_HMAC' => array('file' => 'includes/OAuthSignatureMethod_HMAC.inc'),
-    'OAuthSignatureMethod_PLAINTEXT_SSL' => array('file' => 'includes/OAuthSignatureMethod_PLAINTEXT_SSL.inc'),
     'DrupalOAuthClient'         => array('file' => 'includes/DrupalOAuthClient.inc'),
+    'OAuthSignatureMethod_PLAINTEXT' => $lib,
     'OAuthServer'     => $lib,
     'OAuthDataStore'  => $lib,
     'OAuthRequest'    => $lib,
     'OAuthConsumer'   => $lib,
     'OAuthToken'      => $lib,
-    'OAuthUtil'      => $lib,
+    'OAuthUtil'       => $lib,
   );
 }
 
