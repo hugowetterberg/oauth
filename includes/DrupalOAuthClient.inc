@@ -18,6 +18,8 @@ class DrupalOAuthClient {
    *  Optional. A request token to use.
    * @param OAuthSignatureMethod $signature_method
    *  Optional. The signature method to use.
+   * @param integer $version
+   *  Optional. The version to use - either OAUTH_COMMON_VERSION_1_RFC or OAUTH_COMMON_VERSION_1.
    */
   public function __construct($consumer, $request_token = NULL, $signature_method = NULL, $version = NULL) {
     $this->consumer = $consumer;
@@ -73,6 +75,10 @@ class DrupalOAuthClient {
    *  '/oauth/request_token'.
    * @param array $request_params
    *  Optional. A set of parameters to pass to the provider.
+   * @param string $realm
+   *  Optional. A http authentication realm to be used in the request.
+   * @param boolean $get_method
+   *  Optional. Whether to use GET as the HTTP-method instead of POST.
    * @return DrupalOAuthToken
    *  The returned request token.
    */
@@ -143,6 +149,12 @@ class DrupalOAuthClient {
    *  the default access_endpoint for the $consumer.
    * @param string $request_params
    *  Optional. Parameters to send to the provider.
+   * @param string $realm
+   *  Optional. A http authentication realm to be used in the request.
+   * @param boolean $get_method
+   *  Optional. Whether to use GET as the HTTP-method instead of POST.
+   * @param string $verifier
+   *  Optional. A verifier returned by the provider if version is OAuth 1.0 RFC.
    * @return DrupalOAuthToken
    *  The access token.
    */
