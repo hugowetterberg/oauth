@@ -71,46 +71,75 @@ class DrupalOAuthClient {
    * Gets a request token from the provider.
    *
    * @param string $endpoint
-   *  Optional. The endpoint path for the provider. Defaults to
-   *  '/oauth/request_token'.
-   * @param array $request_params
-   *  Optional. A set of parameters to pass to the provider.
-   * @param string $realm
-   *  Optional. A http authentication realm to be used in the request.
-   * @param boolean $get_method
-   *  Optional. Whether to use GET as the HTTP-method instead of POST.
+   *   Optional. The endpoint path for the provider.
+   *     - If you provide the full URL (e.g. "http://example.com/oauth/request_token"),
+   *       then it will be used.
+   *     - If you provide only the path (e.g. "oauth/request_token"), it will
+   *       be converted into a full URL by prepending the provider_url.
+   *     - If you provide nothing it will default to '/oauth/request_token'.
+   * @param array $options
+   *   An associative array of additional optional options, with the following keys:
+   *     - 'params'
+   *       An associative array of parameters that should be included in the
+   *       request.
+   *     - 'realm'
+   *       A string to be used as the http authentication realm in the request.
+   *     - 'get' (default FALSE)
+   *       Whether to use GET as the HTTP-method instead of POST.
+   *     - 'callback'
+   *       A full URL of where the user should be sent after the request token
+   *       has been authorized.
+   *       Only used by versions higher than OAUTH_COMMON_VERSION_1.
    * @return DrupalOAuthToken
    *  The returned request token.
    */
-  public function getRequestToken($endpoint = '/oauth/request_token', $request_params = array(), $realm = NULL, $get_method = FALSE, $callback_url = NULL) {
-    //TODO: Restructure this function - use an options array
-    if (!$this->requestToken) {
-      if ($this->version > OAUTH_COMMON_VERSION_1) {
-        $request_params['oauth_callback'] = $callback_url ? $callback_url : 'oob';
-      }
-      $response = $this->get($endpoint, array(
-          'params' => $request_params,
-          'realm' => $realm,
-          'get' => $get_method,
-        ));
-      $params = array();
-      parse_str($response, $params);
-
-      if (empty($params['oauth_token']) || empty($params['oauth_token_secret'])) {
-        throw new Exception('No valid request token was returned');
-      }
-
-      if ($this->version > OAUTH_COMMON_VERSION_1 && empty($params['oauth_callback_confirmed'])) {
-        $this->version = OAUTH_1;
-      }
-
-      $this->requestToken = new DrupalOAuthToken($params['oauth_token'], $params['oauth_token_secret'], array(
-        'type' => 'request',
-        'consumer_key' => $this->consumer->key,
-        'provider_token' => FALSE,
-        'version' => $this->version,
-      ));
+  public function getRequestToken($endpoint = NULL, $options = array()) {
+    if ($this->requestToken) {
+      return clone $this->requestToken;
     }
+
+    $options += array(
+        'params' => array(),
+        'realm' => NULL,
+        'get' => FALSE,
+        'callback' => NULL,
+      );
+
+    if (empty($endpoint)) {
+      if (!empty($this->consumer->configuration['request_endpoint'])) {
+        $endpoint = $this->consumer->configuration['request_endpoint'];
+      }
+      else {
+        $endpoint = '/oauth/request_token';
+      }
+    }
+    if ($this->version > OAUTH_COMMON_VERSION_1) {
+      $options['params']['oauth_callback'] = $options['callback'] ? $options['callback'] : 'oob';
+    }
+
+    $response = $this->get($endpoint, array(
+        'params' => $options['params'],
+        'realm' => $options['realm'],
+        'get' => $options['get'],
+      ));
+
+    $params = array();
+    parse_str($response, $params);
+
+    if (empty($params['oauth_token']) || empty($params['oauth_token_secret'])) {
+      throw new Exception('No valid request token was returned');
+    }
+
+    if ($this->version > OAUTH_COMMON_VERSION_1 && empty($params['oauth_callback_confirmed'])) {
+      $this->version = OAUTH_1;
+    }
+
+    $this->requestToken = new DrupalOAuthToken($params['oauth_token'], $params['oauth_token_secret'], array(
+      'type' => 'request',
+      'consumer_key' => $this->consumer->key,
+      'provider_token' => FALSE,
+      'version' => $this->version,
+    ));
 
     return clone $this->requestToken;
   }
@@ -119,84 +148,121 @@ class DrupalOAuthClient {
    * Constructs the url that the user should be sent to to authorize the
    * request token.
    *
-   * @param string $callback_url
-   *  Optional. The url the user should be sent to after the request token has
-   *  been authorized.
    * @param string $endpoint
-   *  Optional. The endpoint path for the provider. Defaults to
-   *  '/oauth/authorize'.
-   * @param array $request_params
-   *  Optional. Parameters to send to the provider.
+   *   Optional. The endpoint path for the provider.
+   *     - If you provide the full URL (e.g. "http://example.com/oauth/authorize"),
+   *       then it will be used.
+   *     - If you provide only the path (e.g. "oauth/authorize"), it will
+   *       be converted into a full URL by prepending the provider_url.
+   *     - If you provide nothing it will default to '/oauth/authorize'.
+   * @param array $options
+   *   An associative array of additional optional options, with the following keys:
+   *     - 'params'
+   *       An associative array of parameters that should be included in the
+   *       request.
+   *     - 'callback'
+   *       A full URL of where the user should be sent after the request token
+   *       has been authorized.
+   *       Only used by version OAUTH_COMMON_VERSION_1.
    * @return string
    *  The url.
    */
-  public function getAuthorizationUrl($callback_url = NULL, $endpoint = '/oauth/authorize', $request_params = array()) {
-    $params = array_merge($request_params, array(
-      'oauth_token' => $this->requestToken->key,
-    ));
-    if ($this->version == OAUTH_COMMON_VERSION_1 && $callback_url) {
-      $params['oauth_callback'] = $callback_url;
+  public function getAuthorizationUrl($endpoint = NULL, $options = array()) {
+    $options += array(
+        'params' => array(),
+        'callback' => NULL,
+      );
+
+    if (empty($endpoint)) {
+      if (!empty($this->consumer->configuration['authorization_endpoint'])) {
+        $endpoint = $this->consumer->configuration['authorization_endpoint'];
+      }
+      else {
+        $endpoint = '/oauth/authorize';
+      }
     }
-    //TODO: What if $endpoint has query parameters?
-    return $this->getAbsolutePath($endpoint) . '?' . http_build_query($params, NULL, '&');
+    if ($this->version == OAUTH_COMMON_VERSION_1 && $options['callback']) {
+      $options['params']['oauth_callback'] = $options['callback'];
+    }
+    $options['params']['oauth_token'] = $this->requestToken->key;
+
+    $endpoint = $this->getAbsolutePath($endpoint);
+    $append_query = strpos($endpoint, '?') === FALSE ? '?' : '&';
+    return $endpoint . $append_query . http_build_query($options['params'], NULL, '&');
   }
 
   /**
    * Fetches the access token using the request token.
    *
    * @param string $endpoint
-   *  Optional. The endpoint path for the provider. Defaults to
-   *  the default access_endpoint for the $consumer.
-   * @param string $request_params
-   *  Optional. Parameters to send to the provider.
-   * @param string $realm
-   *  Optional. A http authentication realm to be used in the request.
-   * @param boolean $get_method
-   *  Optional. Whether to use GET as the HTTP-method instead of POST.
-   * @param string $verifier
-   *  Optional. A verifier returned by the provider if version is OAuth 1.0 RFC.
+   *   Optional. The endpoint path for the provider.
+   *     - If you provide the full URL (e.g. "http://example.com/oauth/access_token"),
+   *       then it will be used.
+   *     - If you provide only the path (e.g. "oauth/access_token"), it will
+   *       be converted into a full URL by prepending the provider_url.
+   *     - If you provide nothing it will default to '/oauth/access_token'.
+   * @param array $options
+   *   An associative array of additional optional options, with the following keys:
+   *     - 'params'
+   *       An associative array of parameters that should be included in the
+   *       request.
+   *     - 'realm'
+   *       A string to be used as the http authentication realm in the request.
+   *     - 'get' (default FALSE)
+   *       Whether to use GET as the HTTP-method instead of POST.
+   *     - 'verifier'
+   *       A string containing a verifier for he user from the provider.
+   *       Only used by versions higher than OAUTH_COMMON_VERSION_1.
    * @return DrupalOAuthToken
    *  The access token.
    */
-  public function getAccessToken($endpoint = NULL, $request_params = array(), $realm = NULL, $get_method = FALSE, $verifier = NULL) {
+  public function getAccessToken($endpoint = NULL, $options = array()) {
+    if ($this->accessToken) {
+      return clone $this->accessToken;
+    }
+
+    $options += array(
+        'params' => array(),
+        'realm' => NULL,
+        'get' => FALSE,
+        'verifier' => NULL,
+      );
+
+    if (empty($endpoint)) {
+      if (!empty($this->consumer->configuration['access_endpoint'])) {
+        $endpoint = $this->consumer->configuration['access_endpoint'];
+      }
+      else {
+        $endpoint = '/oauth/access_token';
+      }
+    }
+    if ($this->version > OAUTH_COMMON_VERSION_1 && $options['verifier'] !== NULL) {
+      $options['params']['oauth_verifier'] = $options['verifier'];
+    }
+
+    $response = $this->get($endpoint, array(
+        'token' => TRUE,
+        'params' => $options['params'],
+        'realm' => $options['realm'],
+        'get' => $options['get'],
+      ));
+
+    $params = array();
+    parse_str($response, $params);
+
+    if (empty($params['oauth_token']) || empty($params['oauth_token_secret'])) {
+      throw new Exception('No valid access token was returned');
+    }
+
+    // Check if we've has recieved this token previously and if so use the old one
+    $this->accessToken = DrupalOAuthToken::load($params['oauth_token'], FALSE);
+    //TODO: Can a secret change even though the token doesn't? If so it needs to be changed.
     if (!$this->accessToken) {
-      if (empty($endpoint)) {
-        if (!empty($this->consumer->configuration['access_endpoint'])) {
-          $endpoint = $this->consumer->configuration['access_endpoint'];
-        }
-        else {
-          $endpoint = '/oauth/access_token';
-        }
-      }
-      if (empty($realm) && !empty($this->consumer->configuration['authentication_realm'])) {
-        $realm = $this->consumer->configuration['authentication_realm'];
-      }
-      if ($this->version > OAUTH_COMMON_VERSION_1 && $verifier !== NULL) {
-        $request_params['oauth_verifier'] = $verifier;
-      }
-      $response = $this->get($endpoint, array(
-          'token' => TRUE,
-          'params' => $request_params,
-          'realm' => $realm,
-          'get' => $get_method,
-        ));
-      $params = array();
-      parse_str($response, $params);
-
-      if (empty($params['oauth_token']) || empty($params['oauth_token_secret'])) {
-        throw new Exception('No valid access token was returned');
-      }
-
-      // Check if we've has recieved this token previously and if so use the old one
-      $this->accessToken = DrupalOAuthToken::load($params['oauth_token'], FALSE);
-      //TODO: Can a secret change even though the token doesn't? If so it needs to be changed.
-      if (!$this->accessToken) {
-        $this->accessToken = new DrupalOAuthToken($params['oauth_token'], $params['oauth_token_secret'], array(
-          'type' => 'access',
-          'consumer_key' => $this->consumer->key,
-          'provider_token' => FALSE,
-        ));
-      }
+      $this->accessToken = new DrupalOAuthToken($params['oauth_token'], $params['oauth_token_secret'], array(
+        'type' => 'access',
+        'consumer_key' => $this->consumer->key,
+        'provider_token' => FALSE,
+      ));
     }
 
     return clone $this->accessToken;
@@ -219,9 +285,9 @@ class DrupalOAuthClient {
    *       An associative array of parameters that should be included in the
    *       request.
    *     - 'realm'
-   *       A string to be used as the authentication realm.
+   *       A string to be used as the http authentication realm in the request.
    *     - 'get' (default FALSE)
-   *       Whether the request should be a GET request instead of a POST.
+   *       Whether to use GET as the HTTP-method instead of POST.
    * @return string
    *   a string containing the response body.
    */
@@ -232,6 +298,10 @@ class DrupalOAuthClient {
         'realm' => NULL,
         'get' => FALSE,
       );
+
+    if (empty($options['realm']) && !empty($this->consumer->configuration['authentication_realm'])) {
+      $options['realm'] = $this->consumer->configuration['authentication_realm'];
+    }
 
     $token = $options['token'] ? $this->requestToken : NULL;
     $path = $this->getAbsolutePath($path);

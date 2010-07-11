@@ -36,7 +36,7 @@ function oauth_common_page_authorized() {
 
       $verifier = isset($_GET['oauth_verifier']) ? $_GET['oauth_verifier'] : NULL;
 
-      $access_token = $client->getAccessToken($endpoint = NULL, array(), NULL, FALSE, $verifier);
+      $access_token = $client->getAccessToken(NULL, array('verifier' => $verifier));
       if ($access_token) {
         // We recieved an old token - don't update
         if (!$access_token->in_database) {
