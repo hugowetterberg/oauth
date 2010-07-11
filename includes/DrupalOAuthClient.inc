@@ -59,7 +59,7 @@ class DrupalOAuthClient {
       $sign = new OAuthSignatureMethod_HMAC($method);
     }
     else if ($fallback_to_sha1) {
-      $sign = new OAuthSignatureMethod_HMAC_SHA1();
+      $sign = new OAuthSignatureMethod_HMAC('SHA1');
     }
 
     return $sign;
