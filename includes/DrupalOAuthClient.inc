@@ -236,7 +236,6 @@ class DrupalOAuthClient {
     $token = $options['token'] ? $this->requestToken : NULL;
     $path = $this->getAbsolutePath($path);
 
-    //TODO: Add callback in this request?
     $req = OAuthRequest::from_consumer_and_token($this->consumer, $token,
       $options['get'] ? 'GET' : 'POST', $path, $options['params']);
     $req->sign_request($this->signatureMethod, $this->consumer, $token);
@@ -263,8 +262,8 @@ class DrupalOAuthClient {
       curl_setopt($ch, CURLOPT_POST, 1);
       curl_setopt($ch, CURLOPT_POSTFIELDS, '');
     }
-    //TODO: Add version number for this module to the user agent
-    curl_setopt($ch, CURLOPT_USERAGENT, 'Drupal/' . VERSION . ' OAuth');
+    $oauth_version = _oauth_common_version();
+    curl_setopt($ch, CURLOPT_USERAGENT, 'Drupal/' . VERSION . ' OAuth/' . $oauth_version);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
     curl_setopt($ch, CURLOPT_HEADER, 1);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);

@@ -1,6 +1,8 @@
 <?php
 // $Id$
 
+define('OAUTH_COMMON_CODE_BRANCH', '6.x-3.x');
+
 define('OAUTH_COMMON_VERSION_1', 1);     // The original 1.0 spec
 define('OAUTH_COMMON_VERSION_1_RFC', 2); // The RFC 5849 1.0 spec
 
@@ -604,4 +606,19 @@ function oauth_common_context_list() {
     $return[$context->name] = $context->title;
   }
   return $return;
+}
+
+function _oauth_common_version() {
+  static $version;
+  if (!isset($version)) {
+    $info = db_result(db_query("SELECT info FROM {system} WHERE name = 'oauth_common'"));
+    $info = $info ? unserialize($info) : FALSE;
+    if (!$info || empty($info['version'])) {
+      $version = OAUTH_COMMON_CODE_BRANCH;
+    }
+    else {
+      $version = $info['version'];
+    }
+  }
+  return $version;
 }
