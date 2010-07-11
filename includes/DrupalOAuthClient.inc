@@ -4,10 +4,10 @@
 class DrupalOAuthClient {
   public $version = OAUTH_COMMON_VERSION_1_RFC;
 
-  private $consumer;
-  private $requestToken;
-  private $accessToken;
-  private $signatureMethod;
+  protected $consumer;
+  protected $requestToken;
+  protected $accessToken;
+  protected $signatureMethod;
 
   /**
    * Creates an instance of the DrupalOAuthClient.
@@ -213,7 +213,7 @@ class DrupalOAuthClient {
    * @return string
    *   a string containing the response body.
    */
-  private function get($path, $options = array()) {
+  protected function get($path, $options = array()) {
     $options += array(
         'token' => FALSE,
         'params' => array(),
@@ -283,7 +283,7 @@ class DrupalOAuthClient {
    * @return string
    *  The absolute path.
    */
-  private function getAbsolutePath($path) {
+  protected function getAbsolutePath($path) {
     $protocols = array(
       'http',
       'https'
@@ -296,7 +296,7 @@ class DrupalOAuthClient {
     return $path;
   }
 
-  private function interpretResponse($res) {
+  protected function interpretResponse($res) {
     list($headers, $body) = preg_split('/\r\n\r\n/', $res, 2);
 
     $obj = (object)array(
