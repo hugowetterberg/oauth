@@ -106,7 +106,7 @@ class DrupalOAuthDataStore extends OAuthDataStore {
    * @return DrupalOAuthToken
    *  The request token
    */
-  function new_request_token($consumer) {
+  function new_request_token($consumer, $callback = null) {
     $token = new DrupalOAuthToken(user_password(32), user_password(32), array(
       'consumer_key'    => $consumer->key,
       'type'            => 'request',
@@ -126,7 +126,7 @@ class DrupalOAuthDataStore extends OAuthDataStore {
    * @param OAuthConsumer $consumer
    *   The service consumer information.
    */
-  function new_access_token($token_old, $consumer) {
+  function new_access_token($token_old, $consumer, $verifier = null) {
     module_load_include('inc', 'oauth_common');
 
     if ($token_old && $token_old->authorized) {

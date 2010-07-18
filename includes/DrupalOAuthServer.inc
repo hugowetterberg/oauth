@@ -12,11 +12,15 @@ class DrupalOAuthServer extends OAuthServer {
   /**
    * Figure out the signature method using context configuration.
    */
-  protected function get_signature_method(&$request) {
-    $signature_method =
-        @$request->get_parameter("oauth_signature_method");
+  protected function get_signature_method($request) {
+    $signature_method = $request instanceof OAuthRequest
+        ? $request->get_parameter("oauth_signature_method")
+        : NULL;
+
     if (!$signature_method) {
-      $signature_method = "PLAINTEXT";
+      // According to chapter 7 ("Accessing Protected Ressources") the signature-method
+      // parameter is required, and we can't just fallback to PLAINTEXT
+      throw new OAuthException('No signature method parameter. This parameter is required');
     }
 
     // Check what signature methods we should support.
