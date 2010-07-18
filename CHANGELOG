@@ -16,6 +16,7 @@ by voxpelli: Added possibility to provide a default authentication realm
 #849832 by Jose Reyero: Fixed proper visibility for DrupalOAuthClient properties/methods
 #835824 by Schnitzel, voxpelli: Changed OAuthSignatureMethod_HMAC_SHA1 to OAuthSignatureMethod_HMAC
 by voxpelli: Changed the class for the plaintext signature method in autoload
+by voxpelli: Refactored some DrupalOAuthClient functions for consistency and flexibility
 #846744 by alex_b, voxpelli: Fixed notice when deleting user
 #846734 by alex_b: Fixed undefined variable: provider_consumer
 #773264 by toemaz: Fixed absolute url as destination in _oauth_common_authorize()
