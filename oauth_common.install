@@ -282,7 +282,7 @@ function oauth_common_update_6003() {
  */
 function oauth_common_update_6100() {
   module_load_include('6100.inc', 'oauth_common', 'updates/update');
-  return _oauth_common_update_6200();
+  return _oauth_common_update_6100();
 }
 
 /**
