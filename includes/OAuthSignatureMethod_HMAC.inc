@@ -30,8 +30,8 @@ class OAuthSignatureMethod_HMAC extends OAuthSignatureMethod {
 
     // Find a supported algorithm among the candidates
     foreach ($algo as $a) {
-      if (in_array($a, $algos)) {
-        $this->algo = $a;
+      if (in_array(strtolower($a), $algos)) {
+        $this->algo = strtolower($a);
         continue;
       }
     }
