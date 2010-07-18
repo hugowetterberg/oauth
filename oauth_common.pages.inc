@@ -34,9 +34,14 @@ function oauth_common_page_authorized() {
       $consumer_token = DrupalOAuthConsumer::load($request_token->consumer_key, FALSE);
       $client = new DrupalOAuthClient($consumer_token, $request_token);
 
-      $access_token = $client->getAccessToken();
+      $verifier = isset($_GET['oauth_verifier']) ? $_GET['oauth_verifier'] : NULL;
+
+      $access_token = $client->getAccessToken(NULL, array('verifier' => $verifier));
       if ($access_token) {
-        $access_token->write();
+        // We recieved an old token - don't update
+        if (!$access_token->in_database) {
+          $access_token->write();
+        }
         $request_token->delete();
         module_invoke_all('oauth_common_authorized', $consumer_token, $access_token, $request_token);
       }
@@ -194,7 +199,6 @@ function oauth_common_form_authorize() {
     drupal_goto('user/login', array(
       'destination' => url('oauth/authorize', array(
         'query' => $query,
-        'absolute' => TRUE,
       )),
     ));
   }

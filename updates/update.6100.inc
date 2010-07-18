@@ -62,8 +62,5 @@ function _oauth_common_update_6100() {
     'default'     => 'default',
   ));
 
-  // Add the default context
-  oauth_common_install_default_oauth_context();
-
   return $ret;
 }

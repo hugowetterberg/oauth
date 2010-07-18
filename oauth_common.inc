@@ -12,7 +12,7 @@
  * @return array
  *  An array of consumer info
  */
-function oauth_common_user_consumers($uid, $provider_consumers=NULL) {
+function oauth_common_user_consumers($uid, $provider_consumer = NULL) {
   $query = 'SELECT * FROM {oauth_common_consumer}
     WHERE uid = %d';
   $args = array(
