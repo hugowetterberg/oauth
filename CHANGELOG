@@ -18,6 +18,7 @@ by voxpelli: Added possibility to provide a default authentication realm
 by voxpelli: Changed the class for the plaintext signature method in autoload
 #846744 by alex_b, voxpelli: Fixed notice when deleting user
 #846734 by alex_b: Fixed undefined variable: provider_consumer
+#773264 by toemaz: Fixed absolute url as destination in _oauth_common_authorize()
 
 OAuth 6.x-3.0-beta1, 2010-05-20
 ------------------------------

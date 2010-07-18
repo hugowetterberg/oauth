@@ -199,7 +199,6 @@ function oauth_common_form_authorize() {
     drupal_goto('user/login', array(
       'destination' => url('oauth/authorize', array(
         'query' => $query,
-        'absolute' => TRUE,
       )),
     ));
   }
