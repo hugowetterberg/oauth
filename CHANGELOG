@@ -2,6 +2,10 @@
 
 OAuth 6.x-3.x, xxxx-xx-xx
 ------------------------------
+by voxpelli: Fixed user consumer listing
+
+OAuth 6.x-3.0-beta2, 2010-07-18
+------------------------------
 by voxpelli: Fixed non-used default access endpoint in client
 by voxpelli: Updated the OAuth library
 #749920 by twom, voxpelli: Fixed character limits for tokens, secrets and keys
