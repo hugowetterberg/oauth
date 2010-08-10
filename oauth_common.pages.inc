@@ -194,7 +194,6 @@ function oauth_common_form_authorize() {
     drupal_goto('user/login', array(
       'destination' => url('oauth/authorize', array(
         'query' => $query,
-        'absolute' => TRUE,
       )),
     ));
   }
@@ -254,7 +253,7 @@ function oauth_common_form_authorize_submit(&$form, &$form_state) {
 
   $got_permission = $got_permission || $values['full_access']; // TODO: Full access should be a configurable auth level
 
-  if (!empty($consumer->callback_url)) {
+  if (!empty($consumer->callback_url) && $consumer->callback_url !== 'oob') {
     // Pick the callback url apart and add the token parameter
     $callback = parse_url($consumer->callback_url);
     $query = array();
