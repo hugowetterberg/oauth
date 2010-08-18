@@ -178,8 +178,12 @@ function oauth_common_form_consumer_submit($form, &$form_state) {
   $values = $form_state['values'];
   $consumer = $values['consumer_object'];
 
+  // Translate empty callback url to oob (out of band).
+  if (empty($values['callback_url'])) {
+    $values['callback_url'] = 'oob';
+  }
   // Add scheme if missing, and if the callback_url isn't out of band.
-  if ($values['callback_url'] != 'oob' && preg_match('/^http:\/\/|https:\/\//', $values['callback_url']) === 0) {
+  else if ($values['callback_url'] != 'oob' && preg_match('/^http:\/\/|https:\/\//', $values['callback_url']) === 0) {
     $values['callback_url'] = 'http://' . $values['callback_url'];
   }
 
