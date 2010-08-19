@@ -23,9 +23,7 @@ function oauth_common_user_consumers($uid, $provider_consumer = NULL) {
     AND provider_consumer = %d';
     $args[':provider_consumer'] = $provider_consumer;
   }
-  $result = db_query($query, array(
-    ':uid' => $uid,
-  ));
+  $result = db_query($query, $args);
   $consumers = array();
   while ($consumer = DrupalOAuthConsumer::fromResult($result)) {
     $consumers[] = $consumer;
