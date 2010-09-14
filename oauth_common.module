@@ -222,6 +222,9 @@ function oauth_common_cron() {
     AND expires <= %d", array(
       ':now' => time(),
   ));
+
+  // Should 300 be overriden in DrupalOAuthServer and made configurable?
+  db_query("DELETE FROM {oauth_common_nonce} WHERE timestamp < %d", time() - 300);
 }
 
 /**
