@@ -4,6 +4,7 @@ OAuth 6.x-3.x, xxxx-xx-xx
 ------------------------------
 by voxpelli: Fixed user consumer listing
 by hugowetterberg: Fixed handling of empty and 'oob' callback urls.
+by SimmeLj, voxpelli: Added removal of old non-used nonces on cron
 
 OAuth 6.x-3.0-beta2, 2010-07-18
 ------------------------------

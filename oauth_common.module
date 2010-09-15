@@ -224,7 +224,10 @@ function oauth_common_cron() {
   ));
 
   // Should 300 be overriden in DrupalOAuthServer and made configurable?
-  db_query("DELETE FROM {oauth_common_nonce} WHERE timestamp < %d", time() - 300);
+  db_query("DELETE FROM {oauth_common_nonce}
+    WHERE `timestamp` < %d", array(
+      ':now' => time() - 300,
+  ));
 }
 
 /**
